@@ -756,6 +756,7 @@ function Chapter6({ opacity }) {
 
 /* ──────────────────────────────────────────────
    Ch7 — AND BEYOND (更大的故事)
+   Left-right layout: images left, text right
    ────────────────────────────────────────────── */
 function Chapter7({ opacity }) {
   return (
@@ -776,106 +777,200 @@ function Chapter7({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle, maxWidth: '900px' }}>
-        <div style={tagStyle}>07 — And Beyond</div>
-        <div style={{ ...headingStyle, color: 'var(--yellow)' }}>
-          Copilot Mosaic.
-        </div>
-        <div style={bodyStyle}>
-          This isn't just about image search. It's about what happens to design when AI enters the loop.
-        </div>
+      <div
+        style={{
+          ...glassCardStyle,
+          maxWidth: '92vw',
+          padding: '32px 36px',
+          display: 'flex',
+          gap: '32px',
+          alignItems: 'stretch',
+        }}
+      >
+        {/* ── LEFT: Images ── */}
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr',
-            gap: '16px',
-            margin: '24px 0',
-          }}
-        >
-          {[
-            { era: 'Old World', desc: 'Designers control output. You draw, you annotate, you deliver.', color: 'var(--pink)' },
-            { era: 'New World', desc: 'Designers define the possibility space. You build components, set rules, then trust AI to combine them at inhuman scale.', color: 'var(--purple)' },
-            { era: 'Future', desc: 'Designers create world elements. Just define style, tone, visual principles. A2UI.', color: 'var(--yellow)' },
-          ].map((item) => (
-            <div
-              key={item.era}
-              style={{
-                padding: '20px',
-                background: 'rgba(255, 255, 255, 0.03)',
-                borderRadius: '14px',
-                border: `1px solid ${item.color}22`,
-                borderTop: `3px solid ${item.color}`,
-              }}
-            >
-              <div style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: item.color, fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}>
-                {item.era}
-              </div>
-              <div style={{ fontFamily: 'var(--sans)', fontSize: '14px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
-                {item.desc}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div
-          style={{
-            margin: '24px 0',
-            padding: '22px',
-            borderRadius: '14px',
-            background: 'rgba(253, 230, 138, 0.04)',
-            border: '1px solid rgba(253, 230, 138, 0.12)',
-          }}
-        >
-          <div style={{ fontFamily: 'var(--display)', fontSize: '20px', fontWeight: 700, color: 'var(--yellow)', marginBottom: '10px' }}>
-            Copilot Mosaic
-          </div>
-          <div style={{ fontFamily: 'var(--sans)', fontSize: '15px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
-            A frontend platform where designers and engineers continuously build and accumulate templates — forming a rich enough style library for AI to choose from and compose, generating infinite possible interfaces. This is <span style={{ color: '#60c0ff' }}>A2UI</span> — from Ambition to User Interface.
-          </div>
-        </div>
-
-        <div style={bodyStyle}>
-          Your craft didn't disappear. It <span style={highlightYellow}>condensed</span>. Every component you design is now deployed millions of times, in combinations you never explicitly specified. The leverage is enormous — but only if each building block is precise enough, independent enough, to survive on its own in the field.
-        </div>
-
-        <div
-          style={{
+            flex: '0 0 50%',
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '12px',
-            padding: '16px',
-            borderRadius: '12px',
-            background: 'rgba(253, 230, 138, 0.05)',
-            border: '1px solid rgba(253, 230, 138, 0.1)',
+            gap: '10px',
+            minHeight: 0,
           }}
         >
+          {/* Tall image on the left */}
           <div
             style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: 'var(--yellow)',
-              animation: 'pulse 2s ease-in-out infinite',
-            }}
-          />
-          <style>{`
-            @keyframes pulse {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0.4; }
-            }
-          `}</style>
-          <div
-            style={{
-              fontFamily: 'var(--mono)',
-              fontSize: '11px',
-              fontWeight: 600,
-              color: 'var(--yellow)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.5px',
+              flex: '1 1 40%',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              background: 'rgba(0, 0, 0, 0.4)',
             }}
           >
-            Proven at Demo Day
+            <img
+              src={import.meta.env.BASE_URL + 'images/beyond-frame.png'}
+              alt="AI-generated page"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
+              }}
+            />
+          </div>
+          {/* Two images stacked on the right */}
+          <div
+            style={{
+              flex: '1 1 60%',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+            }}
+          >
+            <div
+              style={{
+                flex: 1,
+                borderRadius: '12px',
+                overflow: 'hidden',
+                background: 'rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              <img
+                src={import.meta.env.BASE_URL + 'images/beyond-tall.png'}
+                alt="SERP AI layout"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                }}
+              />
+            </div>
+            <div
+              style={{
+                flex: 1,
+                borderRadius: '12px',
+                overflow: 'hidden',
+                background: 'rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              <img
+                src={import.meta.env.BASE_URL + 'images/beyond-group.png'}
+                alt="Copilot Mosaic UI"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  display: 'block',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── RIGHT: Text ── */}
+        <div
+          style={{
+            flex: '0 0 45%',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+          }}
+        >
+          <div style={tagStyle}>07 — And Beyond</div>
+          <div style={{ ...headingStyle, fontSize: '44px', color: 'var(--yellow)' }}>
+            Copilot Mosaic.
+          </div>
+          <div style={{ ...bodyStyle, fontSize: '16px' }}>
+            This isn't just about image search. It's about what happens to design when AI enters the loop.
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              margin: '20px 0',
+            }}
+          >
+            {[
+              { era: 'Old World', desc: 'Designers control output. You draw, annotate, deliver.', color: 'var(--pink)' },
+              { era: 'New World', desc: 'Designers define the possibility space. Build components, set rules, trust AI to combine at scale.', color: 'var(--purple)' },
+              { era: 'Future', desc: 'Define style, tone, visual principles. AI assembles UI from a vast style library. A2UI.', color: 'var(--yellow)' },
+            ].map((item) => (
+              <div
+                key={item.era}
+                style={{
+                  padding: '14px 16px',
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  borderRadius: '10px',
+                  border: `1px solid ${item.color}22`,
+                  borderLeft: `3px solid ${item.color}`,
+                }}
+              >
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: item.color, fontWeight: 700, marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {item.era}
+                </div>
+                <div style={{ fontFamily: 'var(--sans)', fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+                  {item.desc}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div
+            style={{
+              padding: '16px',
+              borderRadius: '10px',
+              background: 'rgba(253, 230, 138, 0.04)',
+              border: '1px solid rgba(253, 230, 138, 0.12)',
+              marginBottom: '16px',
+            }}
+          >
+            <div style={{ fontFamily: 'var(--display)', fontSize: '17px', fontWeight: 700, color: 'var(--yellow)', marginBottom: '6px' }}>
+              Copilot Mosaic
+            </div>
+            <div style={{ fontFamily: 'var(--sans)', fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
+              A frontend platform where designers and engineers continuously build and accumulate templates — a rich style library for AI to compose infinite interfaces. This is <span style={{ color: '#60c0ff' }}>A2UI</span> — from Ambition to User Interface.
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 14px',
+              borderRadius: '10px',
+              background: 'rgba(253, 230, 138, 0.05)',
+              border: '1px solid rgba(253, 230, 138, 0.1)',
+            }}
+          >
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: 'var(--yellow)',
+                animation: 'pulse 2s ease-in-out infinite',
+              }}
+            />
+            <style>{`
+              @keyframes pulse {
+                0%, 100% { opacity: 1; }
+                50% { opacity: 0.4; }
+              }
+            `}</style>
+            <div
+              style={{
+                fontFamily: 'var(--mono)',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: 'var(--yellow)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+              }}
+            >
+              Proven at Demo Day
+            </div>
           </div>
         </div>
       </div>

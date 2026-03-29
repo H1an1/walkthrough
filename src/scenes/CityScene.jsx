@@ -5,22 +5,18 @@ import { CatmullRomCurve3 } from 'three';
 
 // Seeded random for deterministic placement
 const mulberry32 = (a) => {
-  return function() {
+  return function () {
     a |= 0;
     a = (a + 0x6d2b79f5) | 0;
     let t = Math.imul(a ^ (a >>> 15), 1 | a);
     t = t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  }
+  };
 };
 
 const clamp = (v, min = 0, max = 1) => Math.max(min, Math.min(max, v));
-
-// Building placement utility
-const seededRandom = (seed) => {
-  const rng = mulberry32(seed);
-  return rng();
-};
+const lerp = (a, b, t) => a + (b - a) * t;
+const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 export default function CityScene({ scrollProgress = 0 }) {
   const { camera } = useThree();
@@ -29,20 +25,20 @@ export default function CityScene({ scrollProgress = 0 }) {
   const buildingsRef = useRef([]);
   const aiEngineRef = useRef(null);
 
-  // Create curve for camera path
+  // Camera path: aerial → dive → street level → pull back to overview
   const cameraPath = useMemo(() => {
     const posPoints = [
-      new THREE.Vector3(0, 50, 35),
-      new THREE.Vector3(5, 40, 30),
-      new THREE.Vector3(8, 30, 22),
-      new THREE.Vector3(6, 20, 16),
-      new THREE.Vector3(3, 12, 10),
-      new THREE.Vector3(-1, 7, 6),
-      new THREE.Vector3(-2, 5, 3),
-      new THREE.Vector3(2, 5, -1),
-      new THREE.Vector3(5, 8, -5),
-      new THREE.Vector3(4, 20, -8),
-      new THREE.Vector3(0, 45, 22),
+      new THREE.Vector3(0, 55, 40),    // 0.0 Prologue - high aerial
+      new THREE.Vector3(5, 45, 32),    // Descending
+      new THREE.Vector3(10, 32, 24),   // Old World overview
+      new THREE.Vector3(8, 22, 18),    // Ceiling - getting closer
+      new THREE.Vector3(4, 14, 12),    // Diving in
+      new THREE.Vector3(-1, 8, 6),     // Street level - The Shift
+      new THREE.Vector3(-2, 6, 2),     // Close to buildings - Ammunition
+      new THREE.Vector3(2, 6, -2),     // Moving through - New World
+      new THREE.Vector3(6, 10, -6),    // Rising up - Future
+      new THREE.Vector3(4, 25, -10),   // Pulling back
+      new THREE.Vector3(0, 55, 30),    // Finale - high aerial overview of NEW city
     ];
     const lookAtPoints = [
       new THREE.Vector3(0, 0, 0),
@@ -63,120 +59,161 @@ export default function CityScene({ scrollProgress = 0 }) {
     };
   }, []);
 
-  // Building data
+  // === BUILDING DATA: old layout (organic) & new layout (organized grid) ===
   const buildingData = useMemo(() => {
     const buildings = [];
     const palette = [
       0x4a4570, 0x3e3e65, 0x454268, 0x4d4875, 0x403d60,
       0x3a3860, 0x534e7a, 0x48446d, 0x5a5585,
     ];
+    // Brighter, more modern palette for new world
+    const newPalette = [
+      0x5a55a0, 0x4e4e85, 0x555298, 0x6d68a5, 0x504d80,
+      0x4a4890, 0x6b66aa, 0x585498, 0x7a75b5,
+    ];
 
     const placeBuildingType = (x, z, type, seed) => {
       const rng = mulberry32(seed);
       const color = palette[Math.floor(rng() * palette.length)];
+      const newColor = newPalette[Math.floor(rng() * newPalette.length)];
       const baseScale = 0.8 + rng() * 0.4;
       const dist = Math.sqrt(x * x + z * z);
 
       const origPos = new THREE.Vector3(x, 0, z);
+
+      // Exploded position: scatter outward and upward
       const explodedPos = new THREE.Vector3(
-        x * 1.3 + (rng() - 0.5) * 2,
-        rng() * 15 + 8,
-        z * 1.3 + (rng() - 0.5) * 2,
+        x * 1.4 + (rng() - 0.5) * 8,
+        rng() * 20 + 10,
+        z * 1.4 + (rng() - 0.5) * 8
       );
       const explodedRot = {
-        x: (rng() - 0.5) * Math.PI,
-        y: (rng() - 0.5) * Math.PI,
-        z: (rng() - 0.5) * Math.PI,
+        x: (rng() - 0.5) * Math.PI * 1.2,
+        y: (rng() - 0.5) * Math.PI * 1.2,
+        z: (rng() - 0.5) * Math.PI * 0.8,
       };
 
       return {
-        x, z, type, color, baseScale, dist,
-        origPos, explodedPos, explodedRot,
+        x, z, type, color, newColor, baseScale, dist,
+        origPos,
+        newPos: null, // will be assigned after all buildings are created
+        explodedPos, explodedRot,
         phase: rng() * Math.PI * 2,
         speed: 0.5 + rng() * 1.5,
-        isModule: dist < 5,
+        isModule: dist < 8,
         seed,
       };
     };
 
-    // Downtown: 3 buildings per block, skyscrapers + cylinders
+    // === OLD WORLD LAYOUT: organic, somewhat chaotic ===
+    // Downtown core - dense cluster
     for (let bx = -2; bx <= 2; bx++) {
       for (let bz = -2; bz <= 2; bz++) {
-        const cx = bx * 11;
-        const cz = bz * 11;
+        const cx = bx * 11 + (bx % 2 === 0 ? 1.5 : -1);
+        const cz = bz * 11 + (bz % 2 === 0 ? -1 : 2);
         const blockDist = Math.sqrt(cx * cx + cz * cz);
 
-        if (blockDist < 6) {
-          // 3 buildings
-          const positions = [
-            [cx - 3, cz - 3],
-            [cx + 3, cz],
-            [cx - 2, cz + 3],
+        if (blockDist < 8) {
+          // Core: 3 tall buildings + skyscrapers
+          const offsets = [
+            [-3.5, -3], [3, 0.5], [-1.5, 3.5],
           ];
-          positions.forEach((pos, i) => {
-            const type = i % 2 === 0 ? 'skyscraper' : 'cylinder';
-            buildings.push(placeBuildingType(pos[0], pos[1], type, blockDist * 1000 + i));
+          offsets.forEach((pos, i) => {
+            const type = i === 0 ? 'skyscraper' : i === 1 ? 'cylinder' : 'skyscraper';
+            buildings.push(placeBuildingType(cx + pos[0], cz + pos[1], type, blockDist * 1000 + i));
           });
-        } else if (blockDist < 16) {
-          // Midtown: 2 buildings
-          const positions = [[cx - 2, cz - 2], [cx + 2, cz + 2]];
-          positions.forEach((pos, i) => {
+        } else if (blockDist < 18) {
+          // Midtown: 2 mixed buildings
+          const offsets = [[-2.5, -2], [2.5, 2.5]];
+          offsets.forEach((pos, i) => {
             const types = ['skyscraper', 'office'];
-            buildings.push(placeBuildingType(pos[0], pos[1], types[i], blockDist * 1000 + i));
+            buildings.push(placeBuildingType(cx + pos[0], cz + pos[1], types[i], blockDist * 1000 + i));
           });
         } else if (blockDist < 35) {
-          // Suburbs: 2 buildings
-          const positions = [[cx - 2, cz], [cx + 2, cz]];
-          positions.forEach((pos, i) => {
+          // Suburbs: houses and small offices
+          const offsets = [[-2, 0.5], [2.5, -0.5]];
+          offsets.forEach((pos, i) => {
             const types = ['house', 'office'];
-            buildings.push(placeBuildingType(pos[0], pos[1], types[i], blockDist * 1000 + i));
+            buildings.push(placeBuildingType(cx + pos[0], cz + pos[1], types[i], blockDist * 1000 + i));
           });
         }
       }
     }
 
+    // === NEW WORLD LAYOUT: clean organized grid ===
+    // Sort buildings by type, then assign grid positions
+    const typeOrder = { skyscraper: 0, cylinder: 1, office: 2, house: 3 };
+    const sorted = [...buildings].sort((a, b) => {
+      const typeA = typeOrder[a.type] ?? 99;
+      const typeB = typeOrder[b.type] ?? 99;
+      if (typeA !== typeB) return typeA - typeB;
+      return b.baseScale - a.baseScale; // bigger first
+    });
+
+    // Place on a clean grid: 6 columns, uniform spacing
+    const cols = 6;
+    const spacing = 9;
+    const offsetX = -((cols - 1) * spacing) / 2;
+    const offsetZ = -((Math.ceil(sorted.length / cols) - 1) * spacing) / 2;
+
+    sorted.forEach((b, idx) => {
+      const col = idx % cols;
+      const row = Math.floor(idx / cols);
+      const origBuilding = buildings.find((ob) => ob.seed === b.seed);
+      if (origBuilding) {
+        origBuilding.newPos = new THREE.Vector3(
+          offsetX + col * spacing,
+          0,
+          offsetZ + row * spacing
+        );
+      }
+    });
+
+    // Fallback: any building without newPos gets one
+    buildings.forEach((b, i) => {
+      if (!b.newPos) {
+        b.newPos = new THREE.Vector3(
+          (i % 5) * 10 - 20,
+          0,
+          Math.floor(i / 5) * 10 - 20
+        );
+      }
+    });
+
     return buildings;
   }, []);
 
-  // Ground meshes
+  // === GROUND MESH ===
   const groundMeshes = useMemo(() => {
-    // Layer 1: Base ground plane with parks
+    // Layer 1: Base ground
     const geom1 = new THREE.BufferGeometry();
     const positions1 = [];
     const colors1 = [];
 
     const groundColor = new THREE.Color(0.12, 0.12, 0.18);
-    const parkColor = new THREE.Color(0.2, 0.35, 0.18);
+    const parkColor = new THREE.Color(0.18, 0.32, 0.16);
 
-    // Grid of quads
     const gridSize = 140;
     const step = 2;
     for (let x = -gridSize / 2; x < gridSize / 2; x += step) {
       for (let z = -gridSize / 2; z < gridSize / 2; z += step) {
         const x1 = x, x2 = x + step;
         const z1 = z, z2 = z + step;
-        
-        // Determine if in park
+
         const inPark = (px, pz) => {
           const parks = [
             { cx: -25, cz: -25, r: 8 },
             { cx: 25, cz: 25, r: 8 },
             { cx: -25, cz: 25, r: 7 },
           ];
-          return parks.some(p => Math.sqrt((px - p.cx) ** 2 + (pz - p.cz) ** 2) < p.r);
+          return parks.some((p) => Math.sqrt((px - p.cx) ** 2 + (pz - p.cz) ** 2) < p.r);
         };
 
         const c1 = inPark(x1, z1) ? parkColor : groundColor;
-        const c2 = inPark(x2, z1) ? parkColor : groundColor;
-        const c3 = inPark(x2, z2) ? parkColor : groundColor;
-        const c4 = inPark(x1, z2) ? parkColor : groundColor;
-
-        // Triangle 1
         positions1.push(x1, 0, z1, x2, 0, z1, x2, 0, z2);
-        colors1.push(c1.r, c1.g, c1.b, c2.r, c2.g, c2.b, c3.r, c3.g, c3.b);
-        // Triangle 2
+        colors1.push(c1.r, c1.g, c1.b, c1.r, c1.g, c1.b, c1.r, c1.g, c1.b);
         positions1.push(x1, 0, z1, x2, 0, z2, x1, 0, z2);
-        colors1.push(c1.r, c1.g, c1.b, c3.r, c3.g, c3.b, c4.r, c4.g, c4.b);
+        colors1.push(c1.r, c1.g, c1.b, c1.r, c1.g, c1.b, c1.r, c1.g, c1.b);
       }
     }
 
@@ -187,11 +224,10 @@ export default function CityScene({ scrollProgress = 0 }) {
     const geom2 = new THREE.BufferGeometry();
     const positions2 = [];
     const colors2 = [];
-
     const asphaltColor = new THREE.Color(0.025, 0.025, 0.04);
     const sidewalkColor = new THREE.Color(0.15, 0.15, 0.22);
 
-    // Main roads (width 3)
+    // Main roads
     const mainRoads = [
       { x1: -70, x2: 70, z: 0 },
       { x: 0, z1: -70, z2: 70 },
@@ -200,25 +236,24 @@ export default function CityScene({ scrollProgress = 0 }) {
       if (road.z !== undefined) {
         const z = road.z, hw = 1.5;
         for (let x = road.x1; x < road.x2; x += step) {
-          const x1 = x, x2 = x + step;
-          // Road
-          positions2.push(x1, 0.08, z - hw, x2, 0.08, z - hw, x2, 0.08, z + hw);
+          const xa = x, xb = x + step;
+          positions2.push(xa, 0.08, z - hw, xb, 0.08, z - hw, xb, 0.08, z + hw);
           colors2.push(...asphaltColor.toArray(), ...asphaltColor.toArray(), ...asphaltColor.toArray());
-          positions2.push(x1, 0.08, z - hw, x2, 0.08, z + hw, x1, 0.08, z + hw);
+          positions2.push(xa, 0.08, z - hw, xb, 0.08, z + hw, xa, 0.08, z + hw);
           colors2.push(...asphaltColor.toArray(), ...asphaltColor.toArray(), ...asphaltColor.toArray());
-          // Sidewalks
-          positions2.push(x1, 0.08, z - hw - 1, x2, 0.08, z - hw - 1, x2, 0.08, z - hw);
+          // Sidewalk
+          positions2.push(xa, 0.08, z - hw - 1, xb, 0.08, z - hw - 1, xb, 0.08, z - hw);
           colors2.push(...sidewalkColor.toArray(), ...sidewalkColor.toArray(), ...sidewalkColor.toArray());
-          positions2.push(x1, 0.08, z - hw - 1, x2, 0.08, z - hw, x1, 0.08, z - hw);
+          positions2.push(xa, 0.08, z - hw - 1, xb, 0.08, z - hw, xa, 0.08, z - hw);
           colors2.push(...sidewalkColor.toArray(), ...sidewalkColor.toArray(), ...sidewalkColor.toArray());
         }
       } else {
         const x = road.x, hw = 1.5;
         for (let z = road.z1; z < road.z2; z += step) {
-          const z1 = z, z2 = z + step;
-          positions2.push(x - hw, 0.08, z1, x - hw, 0.08, z2, x + hw, 0.08, z2);
+          const za = z, zb = z + step;
+          positions2.push(x - hw, 0.08, za, x - hw, 0.08, zb, x + hw, 0.08, zb);
           colors2.push(...asphaltColor.toArray(), ...asphaltColor.toArray(), ...asphaltColor.toArray());
-          positions2.push(x - hw, 0.08, z1, x + hw, 0.08, z2, x + hw, 0.08, z1);
+          positions2.push(x - hw, 0.08, za, x + hw, 0.08, zb, x + hw, 0.08, za);
           colors2.push(...asphaltColor.toArray(), ...asphaltColor.toArray(), ...asphaltColor.toArray());
         }
       }
@@ -228,20 +263,18 @@ export default function CityScene({ scrollProgress = 0 }) {
     const mainGridLines = [-22, -11, 0, 11, 22];
     mainGridLines.forEach((line) => {
       const hw = 0.8;
-      // Vertical streets
       for (let z = -70; z < 70; z += step) {
-        const z1 = z, z2 = z + step;
-        positions2.push(line - hw, 0.08, z1, line - hw, 0.08, z2, line + hw, 0.08, z2);
+        const za = z, zb = z + step;
+        positions2.push(line - hw, 0.08, za, line - hw, 0.08, zb, line + hw, 0.08, zb);
         colors2.push(...asphaltColor.toArray(), ...asphaltColor.toArray(), ...asphaltColor.toArray());
-        positions2.push(line - hw, 0.08, z1, line + hw, 0.08, z2, line + hw, 0.08, z1);
+        positions2.push(line - hw, 0.08, za, line + hw, 0.08, zb, line + hw, 0.08, za);
         colors2.push(...asphaltColor.toArray(), ...asphaltColor.toArray(), ...asphaltColor.toArray());
       }
-      // Horizontal streets
       for (let x = -70; x < 70; x += step) {
-        const x1 = x, x2 = x + step;
-        positions2.push(x1, 0.08, line - hw, x2, 0.08, line - hw, x2, 0.08, line + hw);
+        const xa = x, xb = x + step;
+        positions2.push(xa, 0.08, line - hw, xb, 0.08, line - hw, xb, 0.08, line + hw);
         colors2.push(...asphaltColor.toArray(), ...asphaltColor.toArray(), ...asphaltColor.toArray());
-        positions2.push(x1, 0.08, line - hw, x2, 0.08, line + hw, x1, 0.08, line + hw);
+        positions2.push(xa, 0.08, line - hw, xb, 0.08, line + hw, xa, 0.08, line + hw);
         colors2.push(...asphaltColor.toArray(), ...asphaltColor.toArray(), ...asphaltColor.toArray());
       }
     });
@@ -253,11 +286,10 @@ export default function CityScene({ scrollProgress = 0 }) {
     const geom3 = new THREE.BufferGeometry();
     const positions3 = [];
     const colors3 = [];
-
     const yellowColor = new THREE.Color(1, 1, 0.3);
     const whiteColor = new THREE.Color(1, 1, 1);
 
-    // Center dashes on main roads
+    // Center dashes
     [-70, -55, -40, -25, -10, 5, 20, 35, 50, 65].forEach((x) => {
       positions3.push(x, 0.16, -1.5, x + 3, 0.16, -1.5, x + 3, 0.16, -0.5);
       colors3.push(...yellowColor.toArray(), ...yellowColor.toArray(), ...yellowColor.toArray());
@@ -272,15 +304,14 @@ export default function CityScene({ scrollProgress = 0 }) {
       colors3.push(...yellowColor.toArray(), ...yellowColor.toArray(), ...yellowColor.toArray());
     });
 
-    // Crosswalks at intersections
+    // Crosswalks
     [[-11, -11], [-11, 0], [-11, 11], [0, -11], [0, 0], [0, 11], [11, -11], [11, 0], [11, 11]].forEach(
       ([cx, cz]) => {
-        // Horizontal stripes
         for (let i = -2; i < 2; i += 0.4) {
-          const x1 = cx - 1.5, x2 = cx + 1.5;
-          positions3.push(x1, 0.16, cz + i, x2, 0.16, cz + i, x2, 0.16, cz + i + 0.3);
+          const xa = cx - 1.5, xb = cx + 1.5;
+          positions3.push(xa, 0.16, cz + i, xb, 0.16, cz + i, xb, 0.16, cz + i + 0.3);
           colors3.push(...whiteColor.toArray(), ...whiteColor.toArray(), ...whiteColor.toArray());
-          positions3.push(x1, 0.16, cz + i, x2, 0.16, cz + i + 0.3, x1, 0.16, cz + i + 0.3);
+          positions3.push(xa, 0.16, cz + i, xb, 0.16, cz + i + 0.3, xa, 0.16, cz + i + 0.3);
           colors3.push(...whiteColor.toArray(), ...whiteColor.toArray(), ...whiteColor.toArray());
         }
       }
@@ -292,23 +323,15 @@ export default function CityScene({ scrollProgress = 0 }) {
     return { geom1, geom2, geom3 };
   }, []);
 
-  // Material for ground
+  // Materials
   const groundMaterial = useMemo(
     () => new THREE.MeshPhongMaterial({ vertexColors: true, emissive: 0x000000 }),
     []
   );
-
-  // Material for markings (with emissive glow)
   const markingMaterial = useMemo(
-    () => new THREE.MeshPhongMaterial({
-      vertexColors: true,
-      emissive: 0x444400,
-      emissiveIntensity: 0.6,
-    }),
+    () => new THREE.MeshPhongMaterial({ vertexColors: true, emissive: 0x444400, emissiveIntensity: 0.6 }),
     []
   );
-
-  // Building material
   const buildingMaterial = useMemo(
     () => new THREE.MeshPhysicalMaterial({
       roughness: 0.15,
@@ -320,238 +343,261 @@ export default function CityScene({ scrollProgress = 0 }) {
     []
   );
 
-  // Function to create a building
+  // === BUILD BUILDING GEOMETRY ===
   const createBuilding = (data) => {
     const group = new THREE.Group();
     group.position.copy(data.origPos);
     group.userData = data;
 
-    if (data.type === 'skyscraper') {
-      const { baseScale, color } = data;
-      const h1 = 12 * baseScale, h2 = 8 * baseScale, h3 = 4 * baseScale;
+    const addWindow = (parent, x, y, z, seed) => {
+      const rng = mulberry32(seed);
+      const windowType = Math.floor(rng() * 3);
+      let color = 0x1a1a2a;
+      if (windowType === 0) color = 0xfff0c8;
+      else if (windowType === 1) color = 0xc8e0ff;
 
-      // Base section
-      const base = new THREE.Mesh(
-        new THREE.BoxGeometry(4 * baseScale, h1, 3 * baseScale),
+      const w = new THREE.Mesh(
+        new THREE.BoxGeometry(0.28, 0.55, 0.05),
+        new THREE.MeshBasicMaterial({ color })
+      );
+      w.position.set(x, y, z);
+      parent.add(w);
+    };
+
+    const addLedge = (parent, width, depth, y, color) => {
+      const ledge = new THREE.Mesh(
+        new THREE.BoxGeometry(width + 0.4, 0.2, depth + 0.4),
         buildingMaterial.clone()
       );
+      ledge.material.color.setHex(color);
+      ledge.position.y = y;
+      parent.add(ledge);
+    };
+
+    if (data.type === 'skyscraper') {
+      const { baseScale, color } = data;
+      const h1 = 14 * baseScale, h2 = 9 * baseScale, h3 = 5 * baseScale;
+      const w = 4 * baseScale, d = 3 * baseScale;
+
+      // Base
+      const base = new THREE.Mesh(new THREE.BoxGeometry(w, h1, d), buildingMaterial.clone());
       base.material.color.setHex(color);
       base.castShadow = true;
       base.position.y = h1 / 2;
       group.add(base);
 
-      // Windows on base
-      for (let x = -1; x < 2; x++) {
-        for (let z = -0.5; z < 1; z++) {
-          for (let y = 1; y < 5; y++) {
-            const rng = mulberry32(data.seed + x * 100 + z * 1000 + y * 10000);
-            const windowType = Math.floor(rng() * 3);
-            let emissive = 0x1a1a2a;
-            let intensity = 0.1;
-            if (windowType === 0) {
-              emissive = 0xfff0c8;
-              intensity = 1.0;
-            } else if (windowType === 1) {
-              emissive = 0xc8e0ff;
-              intensity = 0.7;
-            }
+      // Ledge at base top
+      addLedge(group, w, d, h1, color);
 
-            const windowGeom = new THREE.BoxGeometry(0.25, 0.55, 0.04);
-            const windowMat = new THREE.MeshBasicMaterial({
-              color: emissive,
-              emissive,
-              emissiveIntensity: intensity,
-            });
-            const window = new THREE.Mesh(windowGeom, windowMat);
-            window.position.set(
-              x * 1.2,
-              h1 / 2 - 5 + y * 2,
-              z * 1.5 + 1.5
-            );
-            group.add(window);
+      // Windows on all 4 sides
+      const sides = [
+        { dir: 'z+', zOff: d / 2 + 0.03 },
+        { dir: 'z-', zOff: -(d / 2 + 0.03) },
+      ];
+      sides.forEach((side) => {
+        for (let col = -1; col <= 1; col++) {
+          for (let row = 0; row < 6; row++) {
+            addWindow(group, col * 1.1, 1.5 + row * 1.8, side.zOff, data.seed + col * 100 + row * 1000 + (side.dir === 'z+' ? 0 : 5000));
           }
+        }
+      });
+
+      // Shaft
+      const shaft = new THREE.Mesh(new THREE.BoxGeometry(w * 0.78, h2, d * 0.8), buildingMaterial.clone());
+      shaft.material.color.setHex(color);
+      shaft.castShadow = true;
+      shaft.position.y = h1 + h2 / 2 + 0.3;
+      group.add(shaft);
+
+      // Shaft windows
+      for (let col = -1; col <= 1; col++) {
+        for (let row = 0; row < 4; row++) {
+          addWindow(group, col * 0.9, h1 + 1.5 + row * 1.8, d * 0.4 + 0.03, data.seed + col * 200 + row * 2000);
         }
       }
 
-      // Middle shaft
-      const shaft = new THREE.Mesh(
-        new THREE.BoxGeometry(3 * baseScale, h2, 2.5 * baseScale),
-        buildingMaterial.clone()
-      );
-      shaft.material.color.setHex(color);
-      shaft.castShadow = true;
-      shaft.position.y = h1 + h2 / 2 + 0.5;
-      group.add(shaft);
+      // Ledge at shaft top
+      addLedge(group, w * 0.78, d * 0.8, h1 + h2 + 0.3, color);
 
-      // Crown/setback
-      const crown = new THREE.Mesh(
-        new THREE.BoxGeometry(2 * baseScale, h3, 1.5 * baseScale),
-        buildingMaterial.clone()
-      );
+      // Crown
+      const crown = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, h3, d * 0.5), buildingMaterial.clone());
       crown.material.color.setHex(color);
       crown.castShadow = true;
-      crown.position.y = h1 + h2 + h3 / 2 + 1;
+      crown.position.y = h1 + h2 + h3 / 2 + 0.8;
       group.add(crown);
 
       // Antenna
-      if (seededRandom(data.seed + 1) > 0.5) {
+      const rng = mulberry32(data.seed + 1);
+      if (rng() > 0.4) {
         const antenna = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.15, 0.15, 3, 8),
-          new THREE.MeshBasicMaterial({ color: 0x333333 })
+          new THREE.CylinderGeometry(0.12, 0.12, 3.5, 6),
+          new THREE.MeshBasicMaterial({ color: 0x444444 })
         );
-        antenna.position.y = h1 + h2 + h3 + 1.5;
+        antenna.position.y = h1 + h2 + h3 + 2.5;
         group.add(antenna);
 
         const light = new THREE.Mesh(
-          new THREE.SphereGeometry(0.3, 8, 8),
-          new THREE.MeshBasicMaterial({ color: 0xff0000, emissive: 0xff0000 })
+          new THREE.SphereGeometry(0.25, 6, 6),
+          new THREE.MeshBasicMaterial({ color: 0xff0000 })
         );
-        light.position.y = h1 + h2 + h3 + 3;
+        light.position.y = h1 + h2 + h3 + 4.2;
         light.userData.isAntenna = true;
         group.add(light);
       }
+
+      // Rooftop AC units
+      if (rng() > 0.3) {
+        for (let i = 0; i < 2; i++) {
+          const ac = new THREE.Mesh(
+            new THREE.BoxGeometry(0.6, 0.4, 0.6),
+            new THREE.MeshPhongMaterial({ color: 0x555555 })
+          );
+          ac.position.set((i - 0.5) * 1.2, h1 + h2 + h3 + 1.2, 0);
+          group.add(ac);
+        }
+      }
     } else if (data.type === 'office') {
       const { baseScale, color } = data;
-      const h = 8 * baseScale;
+      const h = 9 * baseScale;
+      const w = 5.5 * baseScale, d = 3.5 * baseScale;
 
       // Main body
-      const body = new THREE.Mesh(
-        new THREE.BoxGeometry(5 * baseScale, h, 3 * baseScale),
-        buildingMaterial.clone()
-      );
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMaterial.clone());
       body.material.color.setHex(color);
       body.castShadow = true;
       body.position.y = h / 2;
       group.add(body);
 
-      // Glass storefront
+      // Glass storefront with warm glow
       const storefront = new THREE.Mesh(
-        new THREE.BoxGeometry(5 * baseScale, 2, 0.1),
-        new THREE.MeshBasicMaterial({
-          color: 0xfff0c8,
-          emissive: 0xfff0c8,
-          emissiveIntensity: 0.8,
-        })
+        new THREE.BoxGeometry(w - 0.2, 2.2, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0xfff0c8 })
       );
-      storefront.position.y = 1;
-      storefront.position.z = 1.5;
+      storefront.position.set(0, 1.1, d / 2 + 0.05);
       group.add(storefront);
 
-      // Windows grid
-      for (let x = -1; x < 2; x++) {
-        for (let z = -0.5; z < 1; z++) {
-          for (let y = 2; y < 4; y++) {
-            const windowGeom = new THREE.BoxGeometry(0.3, 0.5, 0.04);
-            const windowMat = new THREE.MeshBasicMaterial({
-              color: 0xc8e0ff,
-              emissive: 0xc8e0ff,
-              emissiveIntensity: 0.6,
-            });
-            const window = new THREE.Mesh(windowGeom, windowMat);
-            window.position.set(
-              x * 1.5,
-              2 + y * 1.5,
-              z * 1.2 + 1.5
-            );
-            group.add(window);
-          }
+      // Awning
+      const awning = new THREE.Mesh(
+        new THREE.BoxGeometry(w + 0.5, 0.15, 1),
+        new THREE.MeshPhongMaterial({ color: 0x3a2a4a })
+      );
+      awning.position.set(0, 2.3, d / 2 + 0.5);
+      group.add(awning);
+
+      // Window grid
+      for (let col = -2; col <= 2; col++) {
+        for (let row = 0; row < 3; row++) {
+          addWindow(group, col * 1.1, 3.5 + row * 1.6, d / 2 + 0.03, data.seed + col * 300 + row * 3000);
         }
       }
 
-      // Parapet
-      const parapet = new THREE.Mesh(
-        new THREE.BoxGeometry(5.5 * baseScale, 0.5, 3.5 * baseScale),
-        buildingMaterial.clone()
-      );
-      parapet.material.color.setHex(color);
-      parapet.position.y = h + 0.25;
-      group.add(parapet);
+      // Parapet with cornice
+      addLedge(group, w, d, h, color);
+
+      // Rooftop water tank
+      const rng2 = mulberry32(data.seed + 5);
+      if (rng2() > 0.5) {
+        const tank = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.5, 0.5, 1.2, 8),
+          new THREE.MeshPhongMaterial({ color: 0x4a4a5a })
+        );
+        tank.position.set(1, h + 0.8, 0);
+        group.add(tank);
+      }
     } else if (data.type === 'cylinder') {
       const { baseScale, color } = data;
-      const h = 10 * baseScale;
-      const r = 2 * baseScale;
+      const h = 12 * baseScale;
+      const r = 2.2 * baseScale;
 
       // Main cylinder
-      const body = new THREE.Mesh(
-        new THREE.CylinderGeometry(r, r, h, 12),
-        buildingMaterial.clone()
-      );
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), buildingMaterial.clone());
       body.material.color.setHex(color);
       body.castShadow = true;
       body.position.y = h / 2;
       group.add(body);
 
-      // Glowing torus rings at floors
-      for (let i = 1; i < 4; i++) {
+      // Glowing floor rings
+      for (let i = 1; i <= 4; i++) {
         const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(r + 0.3, 0.2, 8, 32),
-          new THREE.MeshBasicMaterial({
-            color: 0x9d5eff,
-            emissive: 0x9d5eff,
-            emissiveIntensity: 0.8,
-          })
+          new THREE.TorusGeometry(r + 0.25, 0.15, 8, 32),
+          new THREE.MeshBasicMaterial({ color: 0x9d5eff })
         );
         ring.rotation.x = Math.PI / 2;
-        ring.position.y = (h / 3.5) * i;
+        ring.position.y = (h / 4.5) * i;
         group.add(ring);
       }
 
-      // Top dome/cap
-      if (seededRandom(data.seed + 2) > 0.5) {
+      // Window strips (vertical)
+      for (let a = 0; a < 6; a++) {
+        const angle = (a / 6) * Math.PI * 2;
+        const strip = new THREE.Mesh(
+          new THREE.BoxGeometry(0.3, h * 0.7, 0.05),
+          new THREE.MeshBasicMaterial({ color: 0xc8e0ff })
+        );
+        strip.position.set(
+          Math.cos(angle) * (r + 0.03),
+          h * 0.45,
+          Math.sin(angle) * (r + 0.03)
+        );
+        strip.rotation.y = -angle;
+        group.add(strip);
+      }
+
+      // Dome
+      const rng3 = mulberry32(data.seed + 2);
+      if (rng3() > 0.4) {
         const dome = new THREE.Mesh(
-          new THREE.SphereGeometry(r, 12, 6),
+          new THREE.SphereGeometry(r, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
           buildingMaterial.clone()
         );
         dome.material.color.setHex(color);
-        dome.scale.y = 0.5;
-        dome.position.y = h + 0.5;
+        dome.position.y = h;
         group.add(dome);
       }
     } else if (data.type === 'house') {
       const { baseScale, color } = data;
+      const h = 3.5 * baseScale;
+      const w = 3.5 * baseScale, d = 3 * baseScale;
 
       // Body
-      const body = new THREE.Mesh(
-        new THREE.BoxGeometry(3 * baseScale, 3 * baseScale, 2.5 * baseScale),
-        buildingMaterial.clone()
-      );
+      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMaterial.clone());
       body.material.color.setHex(color);
       body.castShadow = true;
-      body.position.y = 1.5 * baseScale;
+      body.position.y = h / 2;
       group.add(body);
 
-      // Roof
+      // Pitched roof
       const roof = new THREE.Mesh(
-        new THREE.ConeGeometry(2 * baseScale, 2 * baseScale, 4),
+        new THREE.ConeGeometry(w * 0.75, 2.5 * baseScale, 4),
         buildingMaterial.clone()
       );
       roof.material.color.setHex(0x3a2a4a);
-      roof.position.y = 3 * baseScale + 1;
+      roof.rotation.y = Math.PI / 4;
+      roof.position.y = h + 1.25 * baseScale;
       group.add(roof);
 
-      // Window
-      const window = new THREE.Mesh(
-        new THREE.BoxGeometry(0.4, 0.4, 0.04),
-        new THREE.MeshBasicMaterial({
-          color: 0xfff0c8,
-          emissive: 0xfff0c8,
-          emissiveIntensity: 0.8,
-        })
-      );
-      window.position.set(-0.5, 2 * baseScale, 1.3 * baseScale);
-      group.add(window);
+      // Windows (2 on front)
+      addWindow(group, -0.6, h * 0.6, d / 2 + 0.03, data.seed + 100);
+      addWindow(group, 0.6, h * 0.6, d / 2 + 0.03, data.seed + 200);
 
       // Door
       const door = new THREE.Mesh(
-        new THREE.BoxGeometry(0.6, 1, 0.04),
-        new THREE.MeshBasicMaterial({
-          color: 0xc8e0ff,
-          emissive: 0xc8e0ff,
-          emissiveIntensity: 0.7,
-        })
+        new THREE.BoxGeometry(0.6, 1.2, 0.05),
+        new THREE.MeshBasicMaterial({ color: 0xfff0c8 })
       );
-      door.position.set(0.6, 1, 1.3 * baseScale);
+      door.position.set(0, 0.6, d / 2 + 0.03);
       group.add(door);
+
+      // Chimney
+      const rng4 = mulberry32(data.seed + 3);
+      if (rng4() > 0.5) {
+        const chimney = new THREE.Mesh(
+          new THREE.BoxGeometry(0.4, 1.5, 0.4),
+          new THREE.MeshPhongMaterial({ color: 0x5a4a3a })
+        );
+        chimney.position.set(0.8, h + 1.5 * baseScale, -0.5);
+        group.add(chimney);
+      }
     }
 
     return group;
@@ -572,221 +618,194 @@ export default function CityScene({ scrollProgress = 0 }) {
 
   // Trees
   const trees = useMemo(() => {
-    const treePositions = [
-      [-30, -30],
-      [-20, -25],
-      [25, 30],
-      [30, 25],
-      [-25, 20],
-      [28, -15],
-      [-28, 10],
-      [15, -28],
-      [20, 18],
-      [-15, -10],
+    const positions = [
+      [-30, -30], [-20, -25], [25, 30], [30, 25], [-25, 20],
+      [28, -15], [-28, 10], [15, -28], [20, 18], [-15, -10],
+      [-35, 5], [35, -5], [10, 35], [-10, -35],
     ];
-
-    return treePositions.map(([x, z]) => ({
-      position: new THREE.Vector3(x, 0, z),
-    }));
+    return positions.map(([x, z]) => ({ position: new THREE.Vector3(x, 0, z) }));
   }, []);
 
   // Street lights
-  const lights = useMemo(() => {
-    const lightPositions = [
+  const streetLights = useMemo(() => {
+    const positions = [
       [-40, 0], [-20, 0], [0, 0], [20, 0], [40, 0],
       [0, -40], [0, -20], [0, 20], [0, 40],
+      [-11, -11], [11, 11], [-11, 11], [11, -11],
     ];
-
-    return lightPositions.map(([x, z]) => ({
-      position: new THREE.Vector3(x, 0, z),
-    }));
+    return positions.map(([x, z]) => ({ position: new THREE.Vector3(x, 0, z) }));
   }, []);
 
-  // Animation frame
-  const tempVec = useRef(new THREE.Vector3());
-  const tempLookAt = useRef(new THREE.Vector3());
-
-  useFrame((state) => {
-    const { camera } = state;
-
-    // Camera movement
-    cameraPath.posCurve.getPoint(scrollProgress, tempVec.current);
-    camera.position.lerp(tempVec.current, 0.05);
-
-    cameraPath.lookAtCurve.getPoint(scrollProgress, tempLookAt.current);
-    camera.lookAt(tempLookAt.current);
-
-    // Fog density based on height
-    state.scene.fog.density = 0.007 - (camera.position.y / 100) * 0.003;
-
-    // Explosion animation
-    const explodeProgress = clamp((scrollProgress - 0.34) / 0.14);
-    const reassembleProgress = clamp((scrollProgress - 0.72) / 0.14);
-
-    // Building animations
-    buildingsRef.current.forEach(({ mesh, data }) => {
-      if (explodeProgress > 0 && explodeProgress < 1) {
-        // Exploding
-        mesh.position.lerpVectors(
-          data.origPos,
-          data.explodedPos,
-          explodeProgress
-        );
-        mesh.rotation.x = data.explodedRot.x * explodeProgress;
-        mesh.rotation.y = data.explodedRot.y * explodeProgress;
-        mesh.rotation.z = data.explodedRot.z * explodeProgress;
-      } else if (reassembleProgress > 0 && reassembleProgress < 1) {
-        // Reassembling
-        mesh.position.lerpVectors(
-          data.explodedPos,
-          data.origPos,
-          reassembleProgress
-        );
-        mesh.rotation.x = data.explodedRot.x * (1 - reassembleProgress);
-        mesh.rotation.y = data.explodedRot.y * (1 - reassembleProgress);
-        mesh.rotation.z = data.explodedRot.z * (1 - reassembleProgress);
-      } else if (explodeProgress === 0 && reassembleProgress === 0) {
-        // Floating
-        mesh.position.copy(data.origPos);
-        mesh.position.y += Math.sin(state.clock.elapsedTime * data.speed + data.phase) * 0.3;
-        mesh.rotation.set(0, 0, 0);
-      }
-
-      // Antenna blinking
-      mesh.children.forEach((child) => {
-        if (child.userData.isAntenna) {
-          child.material.emissiveIntensity = Math.sin(state.clock.elapsedTime * 5) > 0 ? 1 : 0.3;
-        }
-      });
-    });
-
-    // Building group rotation
-    if (buildingGroupRef.current) {
-      buildingGroupRef.current.rotation.y =
-        Math.sin(state.clock.elapsedTime * 0.1) * 0.05 + scrollProgress * 0.2;
-    }
-
-    // AI Engine animation
-    if (aiEngineRef.current && explodeProgress > 0.3) {
-      aiEngineRef.current.visible = true;
-      aiEngineRef.current.rotation.x += 0.005;
-      aiEngineRef.current.rotation.y += 0.008;
-      aiEngineRef.current.rotation.z += 0.003;
-    }
-
-    // Drifting point lights
-    pointLightsRef.current.forEach((light, i) => {
-      const speed = 0.0005 + i * 0.0002;
-      light.position.x += Math.sin(state.clock.elapsedTime * speed) * 0.01;
-      light.position.z += Math.cos(state.clock.elapsedTime * speed) * 0.01;
-    });
-  });
-
-  // AI Engine component
+  // AI Engine
   const aiEngine = useMemo(() => {
     const group = new THREE.Group();
-    group.position.set(0, 6, 0);
+    group.position.set(0, 8, 0);
     group.visible = false;
 
-    // Wireframe octahedron
-    const octaGeom = new THREE.OctahedronGeometry(1.2);
+    const octaGeom = new THREE.OctahedronGeometry(1.5);
     const wireGeo = new THREE.WireframeGeometry(octaGeom);
-    const wireframe = new THREE.LineSegments(wireGeo, new THREE.LineBasicMaterial({ color: 0xc4b5fd, transparent: true, opacity: 0 }));
+    const wireframe = new THREE.LineSegments(
+      wireGeo,
+      new THREE.LineBasicMaterial({ color: 0xc4b5fd, transparent: true, opacity: 0.8 })
+    );
     group.add(wireframe);
 
-    // Solid inner octahedron
     const innerOcta = new THREE.Mesh(
-      new THREE.OctahedronGeometry(0.5),
-      new THREE.MeshBasicMaterial({
-        color: 0xc4b5fd,
-        transparent: true,
-        opacity: 0,
-      })
+      new THREE.OctahedronGeometry(0.6),
+      new THREE.MeshBasicMaterial({ color: 0xc4b5fd, transparent: true, opacity: 0.6 })
     );
     group.add(innerOcta);
 
     // Orbital rings
-    const ring1 = new THREE.Mesh(
-      new THREE.RingGeometry(1.8, 2, 32),
-      new THREE.MeshBasicMaterial({
-        color: 0x9d5eff,
-        emissive: 0x9d5eff,
-        emissiveIntensity: 0.6,
-        side: THREE.DoubleSide,
-      })
-    );
-    ring1.rotation.x = Math.PI * 0.3;
-    group.add(ring1);
-
-    const ring2 = new THREE.Mesh(
-      new THREE.RingGeometry(2.2, 2.3, 32),
-      new THREE.MeshBasicMaterial({
-        color: 0x9d5eff,
-        emissive: 0x9d5eff,
-        emissiveIntensity: 0.4,
-        side: THREE.DoubleSide,
-      })
-    );
-    ring2.rotation.z = Math.PI * 0.4;
-    group.add(ring2);
+    [
+      { innerR: 2.2, outerR: 2.4, rotX: Math.PI * 0.3, rotZ: 0 },
+      { innerR: 2.8, outerR: 2.9, rotX: 0, rotZ: Math.PI * 0.4 },
+    ].forEach(({ innerR, outerR, rotX, rotZ }) => {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(innerR, outerR, 32),
+        new THREE.MeshBasicMaterial({ color: 0x9d5eff, side: THREE.DoubleSide })
+      );
+      ring.rotation.x = rotX;
+      ring.rotation.z = rotZ;
+      group.add(ring);
+    });
 
     // Data nodes
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 8; i++) {
       const node = new THREE.Mesh(
-        new THREE.BoxGeometry(0.3, 0.3, 0.3),
-        new THREE.MeshBasicMaterial({
-          color: 0xc4b5fd,
-          emissive: 0xc4b5fd,
-          emissiveIntensity: 0.9,
-        })
+        new THREE.BoxGeometry(0.25, 0.25, 0.25),
+        new THREE.MeshBasicMaterial({ color: 0xc4b5fd })
       );
       node.userData.orbitIndex = i;
       group.add(node);
     }
 
     // Point light
-    const light = new THREE.PointLight(0x9d5eff, 0, 30);
+    const light = new THREE.PointLight(0x9d5eff, 0, 35);
     group.add(light);
 
     return group;
   }, []);
 
-  // Update AI engine
-  useFrame((state) => {
-    if (aiEngineRef.current && aiEngineRef.current.visible) {
-      const children = aiEngineRef.current.children;
-      const explodeProgress = clamp((scrollProgress - 0.34) / 0.14);
+  // === MAIN ANIMATION LOOP ===
+  const tempVec = useRef(new THREE.Vector3());
+  const tempLookAt = useRef(new THREE.Vector3());
 
-      // Find inner octahedron and scale it
-      if (children[1]) {
-        children[1].scale.set(
-          0.6 + Math.sin(state.clock.elapsedTime) * 0.2,
-          0.6 + Math.sin(state.clock.elapsedTime) * 0.2,
-          0.6 + Math.sin(state.clock.elapsedTime) * 0.2
-        );
+  useFrame((state) => {
+    const { camera } = state;
+    const t = state.clock.elapsedTime;
+
+    // Camera
+    cameraPath.posCurve.getPoint(scrollProgress, tempVec.current);
+    camera.position.lerp(tempVec.current, 0.05);
+    cameraPath.lookAtCurve.getPoint(scrollProgress, tempLookAt.current);
+    camera.lookAt(tempLookAt.current);
+
+    // Fog
+    state.scene.fog.density = 0.007 - (camera.position.y / 100) * 0.003;
+
+    // === KEY ANIMATION PHASES ===
+    // Phase 1: Explosion (0.34 → 0.48)
+    const explodeProgress = easeInOutCubic(clamp((scrollProgress - 0.34) / 0.14));
+    // Phase 2: Reassembly into NEW layout (0.68 → 0.82)
+    const reassembleProgress = easeInOutCubic(clamp((scrollProgress - 0.68) / 0.14));
+    // Are we in the "new world" (post-reassembly)?
+    const inNewWorld = scrollProgress > 0.82;
+    // Are we in the "exploded/floating" state?
+    const isExploded = scrollProgress >= 0.48 && scrollProgress < 0.68;
+
+    // Building animations
+    buildingsRef.current.forEach(({ mesh, data }) => {
+      if (explodeProgress > 0 && explodeProgress < 1 && reassembleProgress === 0) {
+        // Phase 1: Exploding from old positions
+        mesh.position.lerpVectors(data.origPos, data.explodedPos, explodeProgress);
+        mesh.rotation.x = data.explodedRot.x * explodeProgress;
+        mesh.rotation.y = data.explodedRot.y * explodeProgress;
+        mesh.rotation.z = data.explodedRot.z * explodeProgress;
+      } else if (isExploded) {
+        // Floating in exploded state with gentle drift
+        mesh.position.copy(data.explodedPos);
+        mesh.position.y += Math.sin(t * data.speed * 0.5 + data.phase) * 1.5;
+        mesh.position.x += Math.sin(t * 0.3 + data.phase) * 0.5;
+        mesh.rotation.x = data.explodedRot.x + Math.sin(t * 0.2 + data.phase) * 0.1;
+        mesh.rotation.y = data.explodedRot.y + t * 0.05;
+        mesh.rotation.z = data.explodedRot.z + Math.cos(t * 0.15 + data.phase) * 0.1;
+      } else if (reassembleProgress > 0 && reassembleProgress < 1) {
+        // Phase 2: Reassembling into NEW positions
+        mesh.position.lerpVectors(data.explodedPos, data.newPos, reassembleProgress);
+        mesh.rotation.x = data.explodedRot.x * (1 - reassembleProgress);
+        mesh.rotation.y = data.explodedRot.y * (1 - reassembleProgress);
+        mesh.rotation.z = data.explodedRot.z * (1 - reassembleProgress);
+      } else if (inNewWorld) {
+        // In the new world: settled at new positions with gentle bob
+        mesh.position.copy(data.newPos);
+        mesh.position.y += Math.sin(t * data.speed * 0.3 + data.phase) * 0.15;
+        mesh.rotation.set(0, 0, 0);
+      } else {
+        // Old world: original positions with subtle float
+        mesh.position.copy(data.origPos);
+        mesh.position.y += Math.sin(t * data.speed + data.phase) * 0.2;
+        mesh.rotation.set(0, 0, 0);
       }
 
-      // Rotate rings
-      if (children[2]) children[2].rotation.x += 0.003;
-      if (children[3]) children[3].rotation.z -= 0.004;
+      // Antenna blinking
+      mesh.children.forEach((child) => {
+        if (child.userData.isAntenna) {
+          child.material.color.setHex(Math.sin(t * 5) > 0 ? 0xff0000 : 0x330000);
+        }
+      });
+    });
 
-      // Orbit nodes
-      const nodeStart = 4;
-      for (let i = 0; i < 6; i++) {
-        if (children[nodeStart + i]) {
-          const node = children[nodeStart + i];
-          const angle = (state.clock.elapsedTime * 0.3 + (i / 6) * Math.PI * 2);
-          node.position.x = Math.cos(angle) * 2.5;
-          node.position.z = Math.sin(angle) * 2.5;
-          node.position.y = Math.sin(angle * 0.5) * 0.5;
+    // Building group slow rotation
+    if (buildingGroupRef.current) {
+      buildingGroupRef.current.rotation.y =
+        Math.sin(t * 0.08) * 0.03 + scrollProgress * 0.15;
+    }
+
+    // AI Engine visibility & animation
+    if (aiEngineRef.current) {
+      const showAI = scrollProgress > 0.36 && scrollProgress < 0.78;
+      aiEngineRef.current.visible = showAI;
+
+      if (showAI) {
+        aiEngineRef.current.rotation.x += 0.004;
+        aiEngineRef.current.rotation.y += 0.006;
+
+        const children = aiEngineRef.current.children;
+        // Inner octa pulse
+        if (children[1]) {
+          const s = 0.6 + Math.sin(t * 1.5) * 0.2;
+          children[1].scale.set(s, s, s);
+        }
+        // Ring rotations
+        if (children[2]) children[2].rotation.x += 0.003;
+        if (children[3]) children[3].rotation.z -= 0.004;
+
+        // Orbit nodes
+        for (let i = 0; i < 8; i++) {
+          const node = children[4 + i];
+          if (node) {
+            const angle = t * 0.4 + (i / 8) * Math.PI * 2;
+            node.position.x = Math.cos(angle) * 3;
+            node.position.z = Math.sin(angle) * 3;
+            node.position.y = Math.sin(angle * 0.7) * 0.8;
+          }
+        }
+
+        // Point light
+        if (children[12]) {
+          children[12].intensity = 0.5 + explodeProgress * 2;
         }
       }
-
-      // Light intensity based on visibility
-      if (children[10]) {
-        children[10].intensity = 0.5 + explodeProgress * 1.5;
-      }
     }
+
+    // Drifting point lights
+    pointLightsRef.current.forEach((light, i) => {
+      if (light) {
+        light.position.x += Math.sin(t * (0.0005 + i * 0.0002)) * 0.01;
+        light.position.z += Math.cos(t * (0.0005 + i * 0.0002)) * 0.01;
+      }
+    });
   });
 
   return (
@@ -796,38 +815,18 @@ export default function CityScene({ scrollProgress = 0 }) {
 
       {/* Lighting */}
       <ambientLight color={0x2a2540} intensity={1.2} />
-      <directionalLight
-        color={0xe0e4ff}
-        intensity={0.8}
-        position={[15, 40, 20]}
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-      />
+      <directionalLight color={0xe0e4ff} intensity={0.8} position={[15, 40, 20]} castShadow shadow-mapSize={[1024, 1024]} />
       <directionalLight color={0x8a7aed} intensity={0.35} position={[-15, 20, -10]} />
       <hemisphereLight skyColor={0x3a2a60} groundColor={0x1a1530} intensity={0.6} />
 
-      {/* Point lights - drifting */}
+      {/* Drifting point lights */}
       <pointLight
-        ref={(el) => {
-          if (el && pointLightsRef.current[0] !== el) {
-            pointLightsRef.current[0] = el;
-          }
-        }}
-        color={0xc4b5fd}
-        intensity={0.8}
-        distance={55}
-        position={[15, 20, 10]}
+        ref={(el) => { if (el) pointLightsRef.current[0] = el; }}
+        color={0xc4b5fd} intensity={0.8} distance={55} position={[15, 20, 10]}
       />
       <pointLight
-        ref={(el) => {
-          if (el && pointLightsRef.current[1] !== el) {
-            pointLightsRef.current[1] = el;
-          }
-        }}
-        color={0xf0c4e2}
-        intensity={0.5}
-        distance={45}
-        position={[-15, 15, -10]}
+        ref={(el) => { if (el) pointLightsRef.current[1] = el; }}
+        color={0xf0c4e2} intensity={0.5} distance={45} position={[-15, 15, -10]}
       />
 
       {/* Ground layers */}
@@ -841,30 +840,38 @@ export default function CityScene({ scrollProgress = 0 }) {
       {/* Trees */}
       {trees.map((tree, i) => (
         <group key={`tree-${i}`} position={[tree.position.x, tree.position.y, tree.position.z]}>
-          <mesh geometry={new THREE.CylinderGeometry(0.3, 0.5, 2, 8)} material={new THREE.MeshPhongMaterial({ color: 0x4a3a2a })} position={[0, 1, 0]} />
-          <mesh geometry={new THREE.SphereGeometry(1.2, 8, 8)} material={new THREE.MeshPhongMaterial({ color: 0x2d5a2d })} position={[0, 3, 0]} />
+          <mesh>
+            <cylinderGeometry args={[0.25, 0.45, 2.5, 8]} />
+            <meshPhongMaterial color={0x4a3a2a} />
+          </mesh>
+          <mesh position={[0, 2.5, 0]}>
+            <sphereGeometry args={[1.3, 8, 8]} />
+            <meshPhongMaterial color={0x2d5a2d} />
+          </mesh>
         </group>
       ))}
 
       {/* Street lights */}
-      {lights.map((light, i) => (
-        <group key={`light-${i}`} position={[light.position.x, light.position.y, light.position.z]}>
-          <mesh geometry={new THREE.CylinderGeometry(0.2, 0.2, 4, 8)} material={new THREE.MeshPhongMaterial({ color: 0x333333 })} position={[0, 2, 0]} />
-          <mesh geometry={new THREE.CylinderGeometry(0.15, 0.1, 1.5, 8)} material={new THREE.MeshPhongMaterial({ color: 0x333333 })} position={[2, 4, 0]} />
-          <mesh
-            geometry={new THREE.SphereGeometry(0.4, 8, 8)}
-            material={new THREE.MeshBasicMaterial({ color: 0xfffacd, emissive: 0xfffacd, emissiveIntensity: 0.9 })}
-            position={[2.5, 4, 0]}
-          />
-          <pointLight color={0xfffacd} intensity={0.3} distance={20} position={[2.5, 4, 0]} />
+      {streetLights.map((sl, i) => (
+        <group key={`sl-${i}`} position={[sl.position.x, sl.position.y, sl.position.z]}>
+          <mesh position={[0, 2, 0]}>
+            <cylinderGeometry args={[0.15, 0.2, 4, 6]} />
+            <meshPhongMaterial color={0x444444} />
+          </mesh>
+          <mesh position={[1.5, 4, 0]}>
+            <cylinderGeometry args={[0.1, 0.08, 1.5, 6]} />
+            <meshPhongMaterial color={0x444444} />
+          </mesh>
+          <mesh position={[2.2, 4, 0]}>
+            <sphereGeometry args={[0.35, 8, 8]} />
+            <meshBasicMaterial color={0xfffacd} />
+          </mesh>
+          <pointLight color={0xfffacd} intensity={0.25} distance={18} position={[2.2, 4, 0]} />
         </group>
       ))}
 
       {/* AI Engine */}
-      <primitive
-        object={aiEngine}
-        ref={aiEngineRef}
-      />
+      <primitive object={aiEngine} ref={aiEngineRef} />
     </>
   );
 }

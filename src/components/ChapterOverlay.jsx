@@ -262,13 +262,13 @@ function Chapter3({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle, maxWidth: '860px' }}>
+      <div style={{ ...glassCardStyle, maxWidth: '860px', maxHeight: '88vh', overflowY: 'auto', padding: '40px 48px' }}>
         <div style={tagStyle}>03 — The Shift</div>
         <div style={headingStyle}>
           Stop designing <span style={highlightPink}>pages</span>. Start{' '}
           <span style={highlightYellow}>forging ammunition</span>.
         </div>
-        <div style={{ ...bodyStyle, marginBottom: '32px' }}>
+        <div style={{ ...bodyStyle, marginBottom: '20px', fontSize: '16px' }}>
           The shift isn't subtle. It's architectural. Instead of pixel-perfect deliverables, we define components. Instead of one layout, we describe infinite possibilities. Watch the city break apart — every building becomes an independent module, free to be recombined.
         </div>
 
@@ -276,8 +276,8 @@ function Chapter3({ opacity }) {
           style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
-            gap: '16px',
-            marginBottom: '24px',
+            gap: '12px',
+            marginBottom: '16px',
           }}
         >
           {[

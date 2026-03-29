@@ -2,6 +2,7 @@ import React, { useRef, useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame, useThree } from '@react-three/fiber';
 import { CatmullRomCurve3 } from 'three';
+import { generateFacadeTexture, generateBumpTexture } from './facadeTexture';
 
 // Seeded random for deterministic placement
 const mulberry32 = (a) => {
@@ -361,43 +362,38 @@ export default function CityScene({ scrollProgress = 0 }) {
     group.position.copy(data.origPos);
     group.userData = data;
 
-    // Window grid — well-spaced, normal-sized windows
-    const addWindowGrid = (parent, faceWidth, faceHeight, faceY, faceZ, faceSide, seed, cols, rows) => {
-      const rng = mulberry32(seed);
-      // Fixed window size, generous spacing
-      const winW = 0.55;
-      const winH = 0.75;
-      const gapX = (faceWidth * 0.75) / Math.max(cols - 1, 1);
-      const gapY = (faceHeight * 0.65) / Math.max(rows - 1, 1);
-      const startX = -(cols - 1) * gapX / 2;
-      const startY = faceY - (rows - 1) * gapY / 2;
+    // Pick facade style based on seed
+    const rngStyle = mulberry32(data.seed + 777);
+    const styleRoll = rngStyle();
 
-      for (let c = 0; c < cols; c++) {
-        for (let r = 0; r < rows; r++) {
-          const rv = rng();
-          let color;
-          if (rv < 0.30) color = 0xffe8a0;      // warm interior
-          else if (rv < 0.48) color = 0xffd070;  // golden
-          else if (rv < 0.60) color = 0xa0d0ff;  // cool fluorescent
-          else if (rv < 0.70) color = 0x70b0ff;  // blue office
-          else color = 0x181820;                  // dark / unlit (30%)
+    // Helper: create a facade material with canvas texture
+    const facadeMat = (wM, hM, seed, opts) => {
+      const colorTex = generateFacadeTexture(wM, hM, data.color, seed, opts);
+      const bumpTex = generateBumpTexture(wM, hM, seed, opts);
+      return new THREE.MeshStandardMaterial({
+        map: colorTex,
+        bumpMap: bumpTex,
+        bumpScale: 0.15,
+        roughness: opts.style === 'glass' ? 0.25 : 0.72,
+        metalness: opts.style === 'glass' ? 0.2 : 0.05,
+      });
+    };
 
-          const wx = faceSide === 'x+' || faceSide === 'x-' ? 0.06 : winW;
-          const wz = faceSide === 'x+' || faceSide === 'x-' ? winW : 0.06;
-
-          const w = new THREE.Mesh(
-            new THREE.BoxGeometry(wx, winH, wz),
-            new THREE.MeshBasicMaterial({ color })
-          );
-          const px = startX + c * gapX;
-          const py = startY + r * gapY;
-          if (faceSide === 'z+') w.position.set(px, py, faceZ);
-          else if (faceSide === 'z-') w.position.set(px, py, -faceZ);
-          else if (faceSide === 'x+') w.position.set(faceZ, py, px);
-          else w.position.set(-faceZ, py, px);
-          parent.add(w);
-        }
-      }
+    // Helper: create a box with facade textures on all 4 vertical faces
+    // BoxGeometry material order: [+x, -x, +y, -y, +z, -z]
+    const texturedBox = (w, h, d, seed, opts) => {
+      const sideWins = Math.max(1, Math.round(d / 2));
+      const sideOpts = { ...opts, windowsPerFloor: sideWins };
+      const frontMat = facadeMat(w, h, seed, opts);
+      const backMat = facadeMat(w, h, seed + 100, opts);
+      const rightMat = facadeMat(d, h, seed + 200, sideOpts);
+      const leftMat = facadeMat(d, h, seed + 300, sideOpts);
+      const roofMat = new THREE.MeshStandardMaterial({ color: data.color, roughness: 0.85 });
+      const botMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+      const materials = [rightMat, leftMat, roofMat, botMat, frontMat, backMat];
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), materials);
+      mesh.castShadow = true;
+      return mesh;
     };
 
     const addLedge = (parent, width, depth, y, color) => {
@@ -410,72 +406,49 @@ export default function CityScene({ scrollProgress = 0 }) {
       parent.add(ledge);
     };
 
-    // Ground floor storefront — every building gets a lit ground level
-    const addGroundFloor = (parent, width, depth, color) => {
-      // Front storefront
-      const sf = new THREE.Mesh(
-        new THREE.BoxGeometry(width * 0.9, 1.8, 0.06),
-        new THREE.MeshBasicMaterial({ color: 0xffe8a0 })
-      );
-      sf.position.set(0, 1.0, depth / 2 + 0.03);
-      parent.add(sf);
-      // Back side lit
-      const sb = new THREE.Mesh(
-        new THREE.BoxGeometry(width * 0.7, 1.4, 0.06),
-        new THREE.MeshBasicMaterial({ color: 0xffd070 })
-      );
-      sb.position.set(0, 0.9, -(depth / 2 + 0.03));
-      parent.add(sb);
-    };
-
     if (data.type === 'skyscraper') {
+      const facadeStyle = styleRoll < 0.4 ? 'glass' : 'modern';
       const { baseScale, color } = data;
       const h1 = 14 * baseScale, h2 = 9 * baseScale, h3 = 5 * baseScale;
       const w = 4.5 * baseScale, d = 3.5 * baseScale;
       const totalH = h1 + h2 + h3;
 
-      // Base section
-      const base = new THREE.Mesh(new THREE.BoxGeometry(w, h1, d), buildingMaterial.clone());
-      base.material.color.setHex(color);
-      base.castShadow = true;
+      // Base section with facade textures
+      const base = texturedBox(w, h1, d, data.seed, {
+        floors: Math.max(2, Math.round(h1 / 3)),
+        windowsPerFloor: Math.max(2, Math.round(w / 1.5)),
+        style: facadeStyle,
+        hasGroundFloor: true,
+      });
       base.position.y = h1 / 2;
       group.add(base);
-
-      // Ground floor storefront
-      addGroundFloor(group, w, d, color);
 
       // Ledge at base/shaft transition
       addLedge(group, w, d, h1, color);
 
-      // Windows on front + back (2 visible faces is enough)
-      addWindowGrid(group, w, h1 - 2.5, h1 / 2 + 1.5, d / 2 + 0.03, 'z+', data.seed, 3, 5);
-      addWindowGrid(group, w, h1 - 2.5, h1 / 2 + 1.5, d / 2 + 0.03, 'z-', data.seed + 1000, 3, 5);
-      addWindowGrid(group, d, h1 - 2.5, h1 / 2 + 1.5, w / 2 + 0.03, 'x+', data.seed + 2000, 2, 5);
-      addWindowGrid(group, d, h1 - 2.5, h1 / 2 + 1.5, w / 2 + 0.03, 'x-', data.seed + 3000, 2, 5);
-
-      // Middle shaft (setback)
+      // Middle shaft (setback) with facade textures
       const sw = w * 0.78, sd = d * 0.82;
-      const shaft = new THREE.Mesh(new THREE.BoxGeometry(sw, h2, sd), buildingMaterial.clone());
-      shaft.material.color.setHex(color);
-      shaft.castShadow = true;
+      const shaft = texturedBox(sw, h2, sd, data.seed + 1000, {
+        floors: Math.max(2, Math.round(h2 / 3)),
+        windowsPerFloor: Math.max(2, Math.round(sw / 1.8)),
+        style: facadeStyle,
+        hasGroundFloor: false,
+      });
       shaft.position.y = h1 + h2 / 2 + 0.3;
       group.add(shaft);
 
-      // Shaft windows (fewer)
-      addWindowGrid(group, sw, h2 - 1, h1 + h2 / 2 + 0.5, sd / 2 + 0.03, 'z+', data.seed + 4000, 2, 3);
-      addWindowGrid(group, sw, h2 - 1, h1 + h2 / 2 + 0.5, sd / 2 + 0.03, 'z-', data.seed + 5000, 2, 3);
-
       addLedge(group, sw, sd, h1 + h2 + 0.3, color);
 
-      // Crown
-      const crown = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, h3, d * 0.5), buildingMaterial.clone());
-      crown.material.color.setHex(color);
-      crown.castShadow = true;
+      // Crown with facade textures
+      const cw = w * 0.5, cd = d * 0.5;
+      const crown = texturedBox(cw, h3, cd, data.seed + 2000, {
+        floors: Math.max(1, Math.round(h3 / 3.5)),
+        windowsPerFloor: Math.max(1, Math.round(cw / 2)),
+        style: facadeStyle,
+        hasGroundFloor: false,
+      });
       crown.position.y = h1 + h2 + h3 / 2 + 0.8;
       group.add(crown);
-
-      // Crown windows (just a couple)
-      addWindowGrid(group, w * 0.5, h3 - 1, h1 + h2 + h3 / 2 + 1, d * 0.25 + 0.03, 'z+', data.seed + 6000, 2, 1);
 
       // Antenna + blinking light
       const rng = mulberry32(data.seed + 1);
@@ -508,34 +481,20 @@ export default function CityScene({ scrollProgress = 0 }) {
         }
       }
     } else if (data.type === 'office') {
+      const facadeStyle = styleRoll < 0.5 ? 'brick' : 'modern';
       const { baseScale, color } = data;
       const h = 9 * baseScale;
       const w = 5.5 * baseScale, d = 3.5 * baseScale;
 
-      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMaterial.clone());
-      body.material.color.setHex(color);
-      body.castShadow = true;
+      // Office body with facade textures
+      const body = texturedBox(w, h, d, data.seed, {
+        floors: Math.max(2, Math.round(h / 3)),
+        windowsPerFloor: Math.max(2, Math.round(w / 1.5)),
+        style: facadeStyle,
+        hasGroundFloor: true,
+      });
       body.position.y = h / 2;
       group.add(body);
-
-      // Ground floor storefront
-      addGroundFloor(group, w, d, color);
-
-      // Awning
-      const rngA = mulberry32(data.seed + 77);
-      const awningColor = rngA() > 0.5 ? 0x2a4a2a : 0x5a2a2a;
-      const awning = new THREE.Mesh(
-        new THREE.BoxGeometry(w + 0.3, 0.12, 0.8),
-        new THREE.MeshStandardMaterial({ color: awningColor, roughness: 0.9 })
-      );
-      awning.position.set(0, 2.2, d / 2 + 0.4);
-      group.add(awning);
-
-      // Windows — normal density
-      addWindowGrid(group, w, h - 3, h / 2 + 1.8, d / 2 + 0.03, 'z+', data.seed + 100, 3, 3);
-      addWindowGrid(group, w, h - 3, h / 2 + 1.8, d / 2 + 0.03, 'z-', data.seed + 200, 3, 3);
-      addWindowGrid(group, d, h - 3, h / 2 + 1.8, w / 2 + 0.03, 'x+', data.seed + 300, 2, 3);
-      addWindowGrid(group, d, h - 3, h / 2 + 1.8, w / 2 + 0.03, 'x-', data.seed + 400, 2, 3);
 
       // Parapet/cornice
       addLedge(group, w, d, h, color);
@@ -554,9 +513,30 @@ export default function CityScene({ scrollProgress = 0 }) {
       const { baseScale, color } = data;
       const h = 12 * baseScale;
       const r = 2.2 * baseScale;
+      const circumference = 2 * Math.PI * r;
 
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.02, h, 20), buildingMaterial.clone());
-      body.material.color.setHex(color);
+      // Cylinder body with wrapped facade texture
+      const cylFloors = Math.max(3, Math.round(h / 2.8));
+      const cylWins = Math.max(4, Math.round(circumference / 1.6));
+      const cylTex = generateFacadeTexture(circumference, h, color, data.seed, {
+        floors: cylFloors,
+        windowsPerFloor: cylWins,
+        style: 'glass',
+        hasGroundFloor: true,
+      });
+      const cylBump = generateBumpTexture(circumference, h, data.seed, {
+        floors: cylFloors,
+        windowsPerFloor: cylWins,
+        style: 'glass',
+      });
+      const roofMat = new THREE.MeshStandardMaterial({ color, roughness: 0.8 });
+      const botMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+      const sideMat = new THREE.MeshStandardMaterial({
+        map: cylTex, bumpMap: cylBump, bumpScale: 0.12,
+        roughness: 0.25, metalness: 0.2,
+      });
+      const cylGeom = new THREE.CylinderGeometry(r, r * 1.02, h, 32);
+      const body = new THREE.Mesh(cylGeom, [sideMat, roofMat, botMat]);
       body.castShadow = true;
       body.position.y = h / 2;
       group.add(body);
@@ -571,32 +551,6 @@ export default function CityScene({ scrollProgress = 0 }) {
         ring.position.y = (h / 5.5) * i;
         group.add(ring);
       }
-
-      // Window strips (vertical) — spaced around facade
-      for (let a = 0; a < 6; a++) {
-        const angle = (a / 6) * Math.PI * 2;
-        const rng = mulberry32(data.seed + a * 111);
-        const stripColor = rng() < 0.35 ? 0xffe8a0 : (rng() < 0.55 ? 0xa0d0ff : 0x181820);
-        const strip = new THREE.Mesh(
-          new THREE.BoxGeometry(r * 0.22, h * 0.55, 0.05),
-          new THREE.MeshBasicMaterial({ color: stripColor })
-        );
-        strip.position.set(
-          Math.cos(angle) * (r + 0.03),
-          h * 0.45,
-          Math.sin(angle) * (r + 0.03)
-        );
-        strip.rotation.y = -angle;
-        group.add(strip);
-      }
-
-      // Ground level entrance
-      const entrance = new THREE.Mesh(
-        new THREE.BoxGeometry(1.2, 2, 0.06),
-        new THREE.MeshBasicMaterial({ color: 0xffe8a0 })
-      );
-      entrance.position.set(0, 1, r + 0.03);
-      group.add(entrance);
 
       // Dome cap
       const rng3 = mulberry32(data.seed + 2);
@@ -614,11 +568,29 @@ export default function CityScene({ scrollProgress = 0 }) {
       const h = 3.5 * baseScale;
       const w = 3.5 * baseScale, d = 3 * baseScale;
 
-      const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMaterial.clone());
-      body.material.color.setHex(color);
-      body.castShadow = true;
-      body.position.y = h / 2;
-      group.add(body);
+      // House body with brick facade textures (front has door)
+      const houseFloors = Math.max(1, Math.round(h / 2.5));
+      const frontMat = facadeMat(w, h, data.seed, {
+        floors: houseFloors, windowsPerFloor: 2, style: 'brick',
+        hasGroundFloor: false, hasDoor: true,
+      });
+      const backMat = facadeMat(w, h, data.seed + 100, {
+        floors: houseFloors, windowsPerFloor: 2, style: 'brick',
+        hasGroundFloor: false,
+      });
+      const sideMat = facadeMat(d, h, data.seed + 200, {
+        floors: houseFloors, windowsPerFloor: 1, style: 'brick',
+        hasGroundFloor: false,
+      });
+      const roofTopMat = new THREE.MeshStandardMaterial({ color, roughness: 0.85 });
+      const botMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+      const houseBody = new THREE.Mesh(
+        new THREE.BoxGeometry(w, h, d),
+        [sideMat, facadeMat(d, h, data.seed + 300, { floors: houseFloors, windowsPerFloor: 1, style: 'brick', hasGroundFloor: false }), roofTopMat, botMat, frontMat, backMat]
+      );
+      houseBody.castShadow = true;
+      houseBody.position.y = h / 2;
+      group.add(houseBody);
 
       // Pitched roof
       const roof = new THREE.Mesh(
@@ -629,18 +601,6 @@ export default function CityScene({ scrollProgress = 0 }) {
       roof.rotation.y = Math.PI / 4;
       roof.position.y = h + 1.25 * baseScale;
       group.add(roof);
-
-      // Windows — 2 front, 1 side
-      addWindowGrid(group, w, h - 1.5, h / 2 + 0.5, d / 2 + 0.03, 'z+', data.seed + 100, 2, 2);
-      addWindowGrid(group, d, h - 1.5, h / 2 + 0.5, w / 2 + 0.03, 'x+', data.seed + 200, 2, 2);
-
-      // Door
-      const door = new THREE.Mesh(
-        new THREE.BoxGeometry(0.7, 1.4, 0.06),
-        new THREE.MeshBasicMaterial({ color: 0xffe0a0 })
-      );
-      door.position.set(0, 0.7, d / 2 + 0.03);
-      group.add(door);
 
       // Chimney
       const rng4 = mulberry32(data.seed + 3);

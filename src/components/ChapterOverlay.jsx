@@ -410,57 +410,6 @@ function Chapter3({ opacity }) {
           ))}
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gap: '12px',
-            marginTop: '16px',
-          }}
-        >
-          {[
-            { name: 'HERO', image: import.meta.env.BASE_URL + 'images/hero.png' },
-            { name: 'CATEGORY', image: import.meta.env.BASE_URL + 'images/category.png' },
-            { name: 'SWIMLANE', image: import.meta.env.BASE_URL + 'images/swimlane.png' },
-            { name: 'GRID', image: import.meta.env.BASE_URL + 'images/grid.png' },
-          ].map((comp) => (
-            <div
-              key={comp.name}
-              style={{
-                position: 'relative',
-                borderRadius: '12px',
-                overflow: 'hidden',
-                background: 'rgba(0, 0, 0, 0.4)',
-              }}
-            >
-              <img
-                src={comp.image}
-                alt={comp.name}
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  display: 'block',
-                }}
-              />
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '8px',
-                  left: '8px',
-                  fontFamily: 'var(--mono)',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  color: 'var(--purple)',
-                  background: 'rgba(0, 0, 0, 0.6)',
-                  padding: '4px 8px',
-                  borderRadius: '4px',
-                }}
-              >
-                {comp.name}
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -509,7 +458,7 @@ function Chapter4({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle, maxWidth: '960px' }}>
+      <div style={{ ...glassCardStyle, maxWidth: '90vw', padding: '32px 40px' }}>
         <div style={tagStyle}>04 — The Ammunition</div>
         <div style={headingStyle}>
           Three bullets. <span style={highlightYellow}>Each with a mission.</span>
@@ -568,6 +517,58 @@ function Chapter4({ opacity }) {
                 }}
               >
                 {comp.desc}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: '12px',
+            marginTop: '16px',
+            marginBottom: '16px',
+          }}
+        >
+          {[
+            { name: 'HERO', image: import.meta.env.BASE_URL + 'images/hero.png', color: 'var(--pink)' },
+            { name: 'CATEGORY', image: import.meta.env.BASE_URL + 'images/category.png', color: 'var(--purple)' },
+            { name: 'SWIMLANE', image: import.meta.env.BASE_URL + 'images/swimlane.png', color: 'var(--yellow)' },
+          ].map((comp) => (
+            <div
+              key={comp.name}
+              style={{
+                position: 'relative',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                background: 'rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              <img
+                src={comp.image}
+                alt={comp.name}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '8px',
+                  left: '8px',
+                  fontFamily: 'var(--mono)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: comp.color,
+                  background: 'rgba(0, 0, 0, 0.6)',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                }}
+              >
+                {comp.name}
               </div>
             </div>
           ))}

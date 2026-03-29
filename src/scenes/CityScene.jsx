@@ -62,14 +62,29 @@ export default function CityScene({ scrollProgress = 0 }) {
   // === BUILDING DATA: old layout (organic) & new layout (organized grid) ===
   const buildingData = useMemo(() => {
     const buildings = [];
+    // Realistic urban palette: concrete, brick, stone, glass, steel
     const palette = [
-      0x4a4570, 0x3e3e65, 0x454268, 0x4d4875, 0x403d60,
-      0x3a3860, 0x534e7a, 0x48446d, 0x5a5585,
+      0x8a8a8a, // light concrete
+      0x6b6b6b, // dark concrete
+      0x7a6a5a, // sandstone/brownstone
+      0x5a5a5a, // charcoal grey
+      0x8b7d6b, // warm stone
+      0x4a5a6a, // blue-grey steel
+      0x6a5a4a, // brown brick
+      0x9a9080, // beige/cream
+      0x5a6a5a, // muted green glass
+      0x7a7070, // rose grey
+      0x6a7a8a, // slate blue
+      0x8a8070, // taupe
     ];
-    // Brighter, more modern palette for new world
+    // Modern palette for new world: cleaner, brighter
     const newPalette = [
-      0x5a55a0, 0x4e4e85, 0x555298, 0x6d68a5, 0x504d80,
-      0x4a4890, 0x6b66aa, 0x585498, 0x7a75b5,
+      0xa0a0a8, // polished concrete
+      0x8899aa, // cool steel
+      0x90a0b0, // glass blue
+      0xb0a898, // warm modern
+      0x889898, // teal grey
+      0xa8a090, // light stone
     ];
 
     const placeBuildingType = (x, z, type, seed) => {
@@ -190,8 +205,8 @@ export default function CityScene({ scrollProgress = 0 }) {
     const positions1 = [];
     const colors1 = [];
 
-    const groundColor = new THREE.Color(0.12, 0.12, 0.18);
-    const parkColor = new THREE.Color(0.18, 0.32, 0.16);
+    const groundColor = new THREE.Color(0.10, 0.10, 0.12); // dark asphalt
+    const parkColor = new THREE.Color(0.12, 0.22, 0.10);  // dark grass
 
     const gridSize = 140;
     const step = 2;
@@ -224,8 +239,8 @@ export default function CityScene({ scrollProgress = 0 }) {
     const geom2 = new THREE.BufferGeometry();
     const positions2 = [];
     const colors2 = [];
-    const asphaltColor = new THREE.Color(0.025, 0.025, 0.04);
-    const sidewalkColor = new THREE.Color(0.15, 0.15, 0.22);
+    const asphaltColor = new THREE.Color(0.06, 0.06, 0.07);   // realistic dark road
+    const sidewalkColor = new THREE.Color(0.22, 0.21, 0.20);  // warm grey concrete sidewalk
 
     // Main roads
     const mainRoads = [
@@ -333,12 +348,9 @@ export default function CityScene({ scrollProgress = 0 }) {
     []
   );
   const buildingMaterial = useMemo(
-    () => new THREE.MeshPhysicalMaterial({
-      roughness: 0.15,
-      metalness: 0.1,
-      clearcoat: 0.35,
-      transparent: true,
-      opacity: 0.88,
+    () => new THREE.MeshStandardMaterial({
+      roughness: 0.75,
+      metalness: 0.05,
     }),
     []
   );
@@ -351,10 +363,13 @@ export default function CityScene({ scrollProgress = 0 }) {
 
     const addWindow = (parent, x, y, z, seed) => {
       const rng = mulberry32(seed);
-      const windowType = Math.floor(rng() * 3);
-      let color = 0x1a1a2a;
-      if (windowType === 0) color = 0xfff0c8;
-      else if (windowType === 1) color = 0xc8e0ff;
+      const r = rng();
+      let color;
+      if (r < 0.4) color = 0xffe8a0;        // warm interior light (most common at night)
+      else if (r < 0.6) color = 0xffd070;    // golden glow
+      else if (r < 0.75) color = 0xa0d0ff;   // cool fluorescent/screen light
+      else if (r < 0.85) color = 0x70b0ff;   // blue-ish office light
+      else color = 0x1a1a22;                  // dark / unlit window
 
       const w = new THREE.Mesh(
         new THREE.BoxGeometry(0.28, 0.55, 0.05),
@@ -468,18 +483,20 @@ export default function CityScene({ scrollProgress = 0 }) {
       body.position.y = h / 2;
       group.add(body);
 
-      // Glass storefront with warm glow
+      // Glass storefront with warm interior glow
       const storefront = new THREE.Mesh(
         new THREE.BoxGeometry(w - 0.2, 2.2, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0xfff0c8 })
+        new THREE.MeshBasicMaterial({ color: 0xffe8a0 })
       );
       storefront.position.set(0, 1.1, d / 2 + 0.05);
       group.add(storefront);
 
-      // Awning
+      // Awning (dark green or maroon — like real awnings)
+      const rngAwning = mulberry32(data.seed + 77);
+      const awningColor = rngAwning() > 0.5 ? 0x2a4a2a : 0x5a2a2a;
       const awning = new THREE.Mesh(
         new THREE.BoxGeometry(w + 0.5, 0.15, 1),
-        new THREE.MeshPhongMaterial({ color: 0x3a2a4a })
+        new THREE.MeshPhongMaterial({ color: awningColor })
       );
       awning.position.set(0, 2.3, d / 2 + 0.5);
       group.add(awning);
@@ -516,23 +533,24 @@ export default function CityScene({ scrollProgress = 0 }) {
       body.position.y = h / 2;
       group.add(body);
 
-      // Glowing floor rings
+      // Floor ledge rings (concrete/metal)
       for (let i = 1; i <= 4; i++) {
         const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(r + 0.25, 0.15, 8, 32),
-          new THREE.MeshBasicMaterial({ color: 0x9d5eff })
+          new THREE.TorusGeometry(r + 0.2, 0.12, 8, 32),
+          new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.3, roughness: 0.5 })
         );
         ring.rotation.x = Math.PI / 2;
         ring.position.y = (h / 4.5) * i;
         group.add(ring);
       }
 
-      // Window strips (vertical)
+      // Window strips (vertical) — warm/cool mix
       for (let a = 0; a < 6; a++) {
         const angle = (a / 6) * Math.PI * 2;
+        const stripColor = a % 2 === 0 ? 0xffe8a0 : 0xa0d0ff;
         const strip = new THREE.Mesh(
           new THREE.BoxGeometry(0.3, h * 0.7, 0.05),
-          new THREE.MeshBasicMaterial({ color: 0xc8e0ff })
+          new THREE.MeshBasicMaterial({ color: stripColor })
         );
         strip.position.set(
           Math.cos(angle) * (r + 0.03),
@@ -571,7 +589,7 @@ export default function CityScene({ scrollProgress = 0 }) {
         new THREE.ConeGeometry(w * 0.75, 2.5 * baseScale, 4),
         buildingMaterial.clone()
       );
-      roof.material.color.setHex(0x3a2a4a);
+      roof.material.color.setHex(0x6a4a3a); // warm terracotta/brown roof
       roof.rotation.y = Math.PI / 4;
       roof.position.y = h + 1.25 * baseScale;
       group.add(roof);
@@ -580,20 +598,20 @@ export default function CityScene({ scrollProgress = 0 }) {
       addWindow(group, -0.6, h * 0.6, d / 2 + 0.03, data.seed + 100);
       addWindow(group, 0.6, h * 0.6, d / 2 + 0.03, data.seed + 200);
 
-      // Door
+      // Door (warm lit doorway)
       const door = new THREE.Mesh(
         new THREE.BoxGeometry(0.6, 1.2, 0.05),
-        new THREE.MeshBasicMaterial({ color: 0xfff0c8 })
+        new THREE.MeshBasicMaterial({ color: 0xffe0a0 })
       );
       door.position.set(0, 0.6, d / 2 + 0.03);
       group.add(door);
 
-      // Chimney
+      // Chimney (red brick)
       const rng4 = mulberry32(data.seed + 3);
       if (rng4() > 0.5) {
         const chimney = new THREE.Mesh(
           new THREE.BoxGeometry(0.4, 1.5, 0.4),
-          new THREE.MeshPhongMaterial({ color: 0x5a4a3a })
+          new THREE.MeshPhongMaterial({ color: 0x8a5a4a })
         );
         chimney.position.set(0.8, h + 1.5 * baseScale, -0.5);
         group.add(chimney);
@@ -646,13 +664,13 @@ export default function CityScene({ scrollProgress = 0 }) {
     const wireGeo = new THREE.WireframeGeometry(octaGeom);
     const wireframe = new THREE.LineSegments(
       wireGeo,
-      new THREE.LineBasicMaterial({ color: 0xc4b5fd, transparent: true, opacity: 0.8 })
+      new THREE.LineBasicMaterial({ color: 0x60c0ff, transparent: true, opacity: 0.8 })
     );
     group.add(wireframe);
 
     const innerOcta = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.6),
-      new THREE.MeshBasicMaterial({ color: 0xc4b5fd, transparent: true, opacity: 0.6 })
+      new THREE.MeshBasicMaterial({ color: 0x80d0ff, transparent: true, opacity: 0.6 })
     );
     group.add(innerOcta);
 
@@ -663,7 +681,7 @@ export default function CityScene({ scrollProgress = 0 }) {
     ].forEach(({ innerR, outerR, rotX, rotZ }) => {
       const ring = new THREE.Mesh(
         new THREE.RingGeometry(innerR, outerR, 32),
-        new THREE.MeshBasicMaterial({ color: 0x9d5eff, side: THREE.DoubleSide })
+        new THREE.MeshBasicMaterial({ color: 0x40a0ff, side: THREE.DoubleSide })
       );
       ring.rotation.x = rotX;
       ring.rotation.z = rotZ;
@@ -674,14 +692,14 @@ export default function CityScene({ scrollProgress = 0 }) {
     for (let i = 0; i < 8; i++) {
       const node = new THREE.Mesh(
         new THREE.BoxGeometry(0.25, 0.25, 0.25),
-        new THREE.MeshBasicMaterial({ color: 0xc4b5fd })
+        new THREE.MeshBasicMaterial({ color: 0x60c0ff })
       );
       node.userData.orbitIndex = i;
       group.add(node);
     }
 
     // Point light
-    const light = new THREE.PointLight(0x9d5eff, 0, 35);
+    const light = new THREE.PointLight(0x40a0ff, 0, 35);
     group.add(light);
 
     return group;
@@ -701,8 +719,8 @@ export default function CityScene({ scrollProgress = 0 }) {
     cameraPath.lookAtCurve.getPoint(scrollProgress, tempLookAt.current);
     camera.lookAt(tempLookAt.current);
 
-    // Fog
-    state.scene.fog.density = 0.007 - (camera.position.y / 100) * 0.003;
+    // Fog — subtle atmospheric haze
+    state.scene.fog.density = 0.006 - (camera.position.y / 120) * 0.002;
 
     // === KEY ANIMATION PHASES ===
     // Phase 1: Explosion (0.34 → 0.48)
@@ -810,23 +828,27 @@ export default function CityScene({ scrollProgress = 0 }) {
 
   return (
     <>
-      <color attach="background" args={['#0e0e1a']} />
-      <fog attach="fog" args={['#0e0e1a', 0.1, 150]} />
+      <color attach="background" args={['#0a0a12']} />
+      <fog attach="fog" args={['#0a0a12', 0.1, 150]} />
 
-      {/* Lighting */}
-      <ambientLight color={0x2a2540} intensity={1.2} />
-      <directionalLight color={0xe0e4ff} intensity={0.8} position={[15, 40, 20]} castShadow shadow-mapSize={[1024, 1024]} />
-      <directionalLight color={0x8a7aed} intensity={0.35} position={[-15, 20, -10]} />
-      <hemisphereLight skyColor={0x3a2a60} groundColor={0x1a1530} intensity={0.6} />
+      {/* Lighting — realistic night city */}
+      <ambientLight color={0x1a1a2a} intensity={0.8} />
+      {/* Moonlight — cool blue-white */}
+      <directionalLight color={0xc0c8e0} intensity={0.6} position={[15, 40, 20]} castShadow shadow-mapSize={[1024, 1024]} />
+      {/* Warm city glow bounce from below */}
+      <directionalLight color={0xffa060} intensity={0.15} position={[-5, -5, 0]} />
+      {/* Cool fill */}
+      <directionalLight color={0x6080a0} intensity={0.25} position={[-15, 20, -10]} />
+      <hemisphereLight skyColor={0x1a2040} groundColor={0x2a1a10} intensity={0.5} />
 
-      {/* Drifting point lights */}
+      {/* Ambient point lights — warm street glow */}
       <pointLight
         ref={(el) => { if (el) pointLightsRef.current[0] = el; }}
-        color={0xc4b5fd} intensity={0.8} distance={55} position={[15, 20, 10]}
+        color={0xffd090} intensity={0.6} distance={55} position={[15, 20, 10]}
       />
       <pointLight
         ref={(el) => { if (el) pointLightsRef.current[1] = el; }}
-        color={0xf0c4e2} intensity={0.5} distance={45} position={[-15, 15, -10]}
+        color={0x90b0d0} intensity={0.4} distance={45} position={[-15, 15, -10]}
       />
 
       {/* Ground layers */}
@@ -840,13 +862,13 @@ export default function CityScene({ scrollProgress = 0 }) {
       {/* Trees */}
       {trees.map((tree, i) => (
         <group key={`tree-${i}`} position={[tree.position.x, tree.position.y, tree.position.z]}>
-          <mesh>
-            <cylinderGeometry args={[0.25, 0.45, 2.5, 8]} />
-            <meshPhongMaterial color={0x4a3a2a} />
+          <mesh position={[0, 1.2, 0]}>
+            <cylinderGeometry args={[0.2, 0.35, 2.5, 8]} />
+            <meshStandardMaterial color={0x4a3828} roughness={0.9} />
           </mesh>
-          <mesh position={[0, 2.5, 0]}>
-            <sphereGeometry args={[1.3, 8, 8]} />
-            <meshPhongMaterial color={0x2d5a2d} />
+          <mesh position={[0, 3, 0]}>
+            <sphereGeometry args={[1.4, 8, 8]} />
+            <meshStandardMaterial color={0x1a3a1a} roughness={0.85} />
           </mesh>
         </group>
       ))}
@@ -855,18 +877,18 @@ export default function CityScene({ scrollProgress = 0 }) {
       {streetLights.map((sl, i) => (
         <group key={`sl-${i}`} position={[sl.position.x, sl.position.y, sl.position.z]}>
           <mesh position={[0, 2, 0]}>
-            <cylinderGeometry args={[0.15, 0.2, 4, 6]} />
-            <meshPhongMaterial color={0x444444} />
+            <cylinderGeometry args={[0.12, 0.18, 4, 6]} />
+            <meshStandardMaterial color={0x3a3a3a} metalness={0.4} roughness={0.6} />
           </mesh>
           <mesh position={[1.5, 4, 0]}>
-            <cylinderGeometry args={[0.1, 0.08, 1.5, 6]} />
-            <meshPhongMaterial color={0x444444} />
+            <cylinderGeometry args={[0.08, 0.06, 1.5, 6]} />
+            <meshStandardMaterial color={0x3a3a3a} metalness={0.4} roughness={0.6} />
           </mesh>
           <mesh position={[2.2, 4, 0]}>
-            <sphereGeometry args={[0.35, 8, 8]} />
-            <meshBasicMaterial color={0xfffacd} />
+            <sphereGeometry args={[0.3, 8, 8]} />
+            <meshBasicMaterial color={0xffeebb} />
           </mesh>
-          <pointLight color={0xfffacd} intensity={0.25} distance={18} position={[2.2, 4, 0]} />
+          <pointLight color={0xffd090} intensity={0.3} distance={20} position={[2.2, 4, 0]} />
         </group>
       ))}
 

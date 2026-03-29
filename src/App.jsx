@@ -8,15 +8,15 @@ import ScrollHint from './components/ScrollHint'
 import './App.css'
 
 const CHAPTERS = [
-  { id: 'ch0', start: 0,    end: .09, label: 'PROLOGUE',          navLabel: 'Aerial',      navTo: 0 },
-  { id: 'ch1', start: .09,  end: .18, label: '01 OLD WORLD',      navLabel: 'Old World',   navTo: .10 },
-  { id: 'ch2', start: .18,  end: .28, label: '02 THE CEILING',     navLabel: 'Ceiling',     navTo: .20 },
-  { id: 'ch3', start: .28,  end: .38, label: '03 THE SHIFT',       navLabel: 'Shift',       navTo: .30 },
-  { id: 'ch4', start: .38,  end: .48, label: '04 AMMUNITION',      navLabel: 'Modules',     navTo: .40 },
-  { id: 'ch5', start: .48,  end: .58, label: '05 NEW WORLD',       navLabel: 'New World',   navTo: .50 },
-  { id: 'ch6', start: .58,  end: .68, label: '06 BATTLEFIELD',     navLabel: 'Battlefield', navTo: .60 },
-  { id: 'ch7', start: .68,  end: .82, label: '07 AND BEYOND',      navLabel: 'Beyond',      navTo: .72 },
-  { id: 'ch8', start: .82,  end: 1.0, label: '08 FINALE',          navLabel: 'Finale',      navTo: .88 },
+  { id: 'ch0', start: 0,    end: .09, label: 'PROLOGUE',            navLabel: 'Aerial',     navTo: 0 },
+  { id: 'ch1', start: .09,  end: .18, label: '01 OLD CITY',         navLabel: 'Old City',   navTo: .10 },
+  { id: 'ch2', start: .18,  end: .28, label: '02 THE CEILING',      navLabel: 'Ceiling',    navTo: .20 },
+  { id: 'ch3', start: .28,  end: .38, label: '03 THE SHIFT',        navLabel: 'Shift',      navTo: .30 },
+  { id: 'ch4', start: .38,  end: .48, label: '04 BUILDING BLOCKS',  navLabel: 'Blocks',     navTo: .40 },
+  { id: 'ch5', start: .48,  end: .58, label: '05 NEW CITY',         navLabel: 'New City',   navTo: .50 },
+  { id: 'ch6', start: .58,  end: .68, label: '06 METROPOLIS',       navLabel: 'Metropolis', navTo: .60 },
+  { id: 'ch7', start: .68,  end: .82, label: '07 AND BEYOND',       navLabel: 'Beyond',     navTo: .72 },
+  { id: 'ch8', start: .82,  end: 1.0, label: '08 FINALE',           navLabel: 'Finale',     navTo: .88 },
 ]
 
 export default function App() {

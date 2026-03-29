@@ -95,8 +95,8 @@ function Chapter0({ opacity }) {
             marginBottom: '28px',
           }}
         >
-          From Pages to{' '}
-          <span style={highlightPurple}>Ammunition</span>.
+          From Blueprints to{' '}
+          <span style={highlightPurple}>Building Blocks</span>.
         </div>
         <div
           style={{
@@ -106,7 +106,7 @@ function Chapter0({ opacity }) {
             color: 'rgba(255, 255, 255, 0.6)',
           }}
         >
-          How we stopped designing layouts and started arming AI.
+          How we stopped planning cities and started forging the blocks that build them.
         </div>
       </div>
     </div>
@@ -114,8 +114,7 @@ function Chapter0({ opacity }) {
 }
 
 /* ──────────────────────────────────────────────
-   Ch1 — OLD WORLD
-   From markdown 范式转换 → 旧模式
+   Ch1 — THE MASTER ARCHITECT
    ────────────────────────────────────────────── */
 function Chapter1({ opacity }) {
   return (
@@ -137,18 +136,18 @@ function Chapter1({ opacity }) {
       }}
     >
       <div style={{ ...glassCardStyle }}>
-        <div style={tagStyle}>01 — The Old World</div>
+        <div style={tagStyle}>01 — The Old City</div>
         <div style={headingStyle}>
-          The designer as <span style={highlightPink}>director</span>.
+          The master <span style={highlightPink}>architect</span>.
         </div>
         <div style={bodyStyle}>
-          You control every frame. You decide what goes where, how big, in what order. The page is your canvas. You deliver annotated specs, engineering builds exactly what you drew.
+          In the old world, you designed the entire city. Every building placed by hand, every street drawn to spec. One architect, one blueprint, one grand vision — handed off to engineering, built exactly as drawn.
         </div>
         <div style={bodyStyle}>
-          Look at the city below. Every building placed by hand, every block arranged with intention. Beautiful — but fragile. Change one requirement and the whole layout has to be redrawn.
+          Look at the city below. Every block arranged with intention. Beautiful — but change one zoning rule and the whole plan has to be redrawn.
         </div>
         <div style={italicStyle}>
-          One designer, one layout, serving billions of queries. This was the old model.
+          One architect. One blueprint. Serving billions of visitors. This was the old model.
         </div>
       </div>
     </div>
@@ -180,10 +179,10 @@ function Chapter2({ opacity }) {
       <div style={{ ...glassCardStyle, maxWidth: '90vw', padding: '32px 40px' }}>
         <div style={tagStyle}>02 — The Ceiling</div>
         <div style={headingStyle}>
-          There is no <span style={highlightPink}>perfect layout</span>.
+          There is no <span style={highlightPink}>perfect city plan</span>.
         </div>
         <div style={{ ...bodyStyle, fontSize: '16px' }}>
-          We spent months searching for the ideal image search layout. Waterfall, magazine, masonry, grid — 9 rounds of user research, 50+ proposals. Every layout had a fatal flaw. Users wanted contradictory things: waterfall for impact, magazine for scannability.
+          We spent months trying to design the perfect city. Waterfall districts, magazine quarters, masonry grids — 9 rounds of research, 50+ blueprints. Every plan had a fatal flaw. Residents wanted contradictory things: wide boulevards for scenic views, dense blocks for fast navigation.
         </div>
         <div
           style={{
@@ -213,7 +212,7 @@ function Chapter2({ opacity }) {
               "Sunset wallpaper"
             </div>
             <div style={{ fontSize: '15px', color: 'rgba(255, 255, 255, 0.6)', lineHeight: 1.5 }}>
-              Needs big visuals, emotional impact. One stunning image says it all.
+              Needs wide boulevards and scenic overlooks. One stunning view says it all.
             </div>
           </div>
           <div
@@ -236,12 +235,12 @@ function Chapter2({ opacity }) {
               "iPhone 16 colors"
             </div>
             <div style={{ fontSize: '15px', color: 'rgba(255, 255, 255, 0.6)', lineHeight: 1.5 }}>
-              Needs structured comparison, density, scannability. Many options, found fast.
+              Needs a dense showroom with everything on display. Many options, found fast.
             </div>
           </div>
         </div>
         <div style={{ ...bodyStyle, fontSize: '16px' }}>
-          Completely different problems — but we were serving them with the same grid. This isn't a design problem. It's a <span style={highlightYellow}>model problem</span>.
+          A tourist district and a financial district have completely different needs — but we were building them with the same blueprint. This isn't an architecture problem. It's a <span style={highlightYellow}>city planning problem</span>.
         </div>
 
         <div
@@ -296,7 +295,7 @@ function Chapter2({ opacity }) {
         </div>
 
         <div style={italicStyle}>
-          Layout optimization had hit its ceiling. No amount of pixel-tuning would break through.
+          No amount of urban planning would break through this ceiling. The blueprint had reached its limit.
         </div>
       </div>
     </div>
@@ -328,11 +327,11 @@ function Chapter3({ opacity }) {
       <div style={{ ...glassCardStyle, maxWidth: '90vw', padding: '32px 40px' }}>
         <div style={tagStyle}>03 — The Shift</div>
         <div style={headingStyle}>
-          Stop designing <span style={highlightPink}>pages</span>. Start{' '}
-          <span style={highlightYellow}>forging ammunition</span>.
+          Stop drawing <span style={highlightPink}>blueprints</span>. Start{' '}
+          <span style={highlightYellow}>forging blocks</span>.
         </div>
         <div style={{ ...bodyStyle, marginBottom: '20px', fontSize: '16px' }}>
-          Watch the city break apart — every building becomes an independent module, free to be recombined. This isn't a small adjustment. It's a fundamental shift in what "design" means inside an AI product.
+          Watch the city break apart — every building becomes an independent block, free to be reassembled. This isn't a renovation. It's a fundamental shift in what "city planning" means.
         </div>
 
         <div
@@ -346,21 +345,21 @@ function Chapter3({ opacity }) {
           {[
             {
               era: 'Old',
-              role: 'Director',
+              role: 'Master Architect',
               color: 'var(--pink)',
-              desc: 'You control every frame. You decide placement, size, order. You deliver annotated specs.',
+              desc: 'You design the whole city. Every building, every street, every block. You hand off the blueprint, engineering builds exactly what you drew.',
             },
             {
               era: 'Now',
-              role: 'Arms Dealer',
+              role: 'Block Maker',
               color: 'var(--purple)',
-              desc: 'You forge precise, independent weapons. Then hand them to AI: the battlefield is yours.',
+              desc: 'You forge precise, independent building blocks. Then hand them to AI and say: build the city.',
             },
             {
               era: 'Future',
-              role: '?',
+              role: 'City DNA',
               color: 'var(--yellow)',
-              desc: 'No more templates — just style, tone, visual principles. AI assembles UI from a vast style library.',
+              desc: 'No more blueprints — just define the city\'s character: style, density, rhythm. AI assembles the skyline from a vast library of blocks.',
             },
           ].map((item) => (
             <div
@@ -409,34 +408,33 @@ function Chapter3({ opacity }) {
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );
 }
 
 /* ──────────────────────────────────────────────
-   Ch4 — THREE BULLETS (三颗子弹)
+   Ch4 — THREE BUILDING BLOCKS (三颗子弹)
    ────────────────────────────────────────────── */
 function Chapter4({ opacity }) {
   const ammo = [
     {
       title: 'Hero',
-      subtitle: 'The Anchor',
+      subtitle: 'The Landmark',
       color: 'var(--pink)',
-      desc: 'Someone searches "Eiffel Tower" — they don\'t need 50 thumbnails. They need one authoritative answer: yes, this is it. Hero confirms the core visual meaning of the query. Its power comes from focus, not density. From what you leave out, not what you cram in.',
+      desc: 'Someone searches "Eiffel Tower" — they don\'t need a whole neighborhood of thumbnails. They need one unmistakable landmark that says: yes, this is it. Hero anchors the city. Its power comes from what you leave out, not what you cram in.',
     },
     {
       title: 'Category Selector',
-      subtitle: 'The Navigator',
+      subtitle: 'The Crossroads',
       color: 'var(--purple)',
-      desc: '"2025 wedding dress" — the user isn\'t looking for one image. They\'re standing at a crossroads. A-line? Mermaid? Boho? Category Selector breaks a broad query into structured directions. It\'s not decoration — it\'s information architecture.',
+      desc: '"2025 wedding dress" — the visitor stands at an intersection. A-line avenue? Mermaid lane? Boho boulevard? Category Selector maps the routes through the city. It\'s not decoration — it\'s the city\'s wayfinding system.',
     },
     {
       title: 'Swimlane',
-      subtitle: 'The Explorer',
+      subtitle: 'The Avenue',
       color: 'var(--yellow)',
-      desc: 'Search "jaguar" — you might want the car or the cat. These parallel meanings shouldn\'t be crammed into one grid. Swimlane lays them side by side — no forced choice, just all the possibilities spread out before you.',
+      desc: 'Search "jaguar" — one avenue leads to the dealership, another to the nature preserve. Parallel streets for parallel meanings. No forced turns, just all the paths spread out before you.',
     },
   ];
 
@@ -459,12 +457,12 @@ function Chapter4({ opacity }) {
       }}
     >
       <div style={{ ...glassCardStyle, maxWidth: '90vw', padding: '32px 40px' }}>
-        <div style={tagStyle}>04 — The Ammunition</div>
+        <div style={tagStyle}>04 — The Building Blocks</div>
         <div style={headingStyle}>
-          Three bullets. <span style={highlightYellow}>Each with a mission.</span>
+          Three blocks. <span style={highlightYellow}>Each with a purpose.</span>
         </div>
         <div style={{ ...bodyStyle, marginBottom: '12px' }}>
-          Not three layouts — three <span style={highlightPurple}>behavioral units</span>. They form a chain: <strong style={{ color: '#fff' }}>Confirm → Decompose → Expand → Browse.</strong>
+          Not three city plans — three <span style={highlightPurple}>types of city blocks</span>, each solving a different urban problem. Together they form a chain: <strong style={{ color: '#fff' }}>Anchor → Navigate → Explore → Browse.</strong>
         </div>
 
         <div
@@ -575,7 +573,7 @@ function Chapter4({ opacity }) {
         </div>
 
         <div style={italicStyle}>
-          The traditional grid still lives at the bottom — the fallback for deep browsing. But above it, AI is orchestrating a structured answer in real time, assembling the right components for each query.
+          The old grid still lives at the bottom — the fallback for deep browsing. But above it, AI is assembling a new cityscape in real time, choosing the right blocks for each visitor.
         </div>
       </div>
     </div>
@@ -605,7 +603,7 @@ function Chapter5({ opacity }) {
       }}
     >
       <div style={{ ...glassCardStyle, maxWidth: '900px' }}>
-        <div style={tagStyle}>05 — The New World</div>
+        <div style={tagStyle}>05 — The New City</div>
         <div style={headingStyle}>
           The deliverable <span style={highlightPurple}>changed</span>.
         </div>
@@ -630,7 +628,7 @@ function Chapter5({ opacity }) {
               Before
             </div>
             <div style={{ fontFamily: 'var(--sans)', fontSize: '15px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.6 }}>
-              Annotated page layouts. One designer decides the experience for all queries.
+              A finished city blueprint. One architect decides the entire layout for every visitor.
             </div>
           </div>
           <div
@@ -645,16 +643,16 @@ function Chapter5({ opacity }) {
               After
             </div>
             <div style={{ fontFamily: 'var(--sans)', fontSize: '15px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.6 }}>
-              A contract between designer and AI renderer. The designer defines rules; AI decides the experience per query.
+              A building code. The architect defines the blocks and rules; AI builds a different city for every visitor.
             </div>
           </div>
         </div>
 
         <div style={bodyStyle}>
-          We went from designing final compositions to designing the <span style={highlightYellow}>grammar that generates infinite compositions</span>. The designer's job didn't shrink — it moved upstream. Less "what does this page look like" and more "what are the fundamental building blocks of visual understanding, and how should they behave."
+          We went from designing finished cities to designing the <span style={highlightYellow}>building code that generates infinite cities</span>. The architect's job didn't shrink — it moved upstream. Less "what does this city look like" and more "what are the fundamental blocks, and how should they connect."
         </div>
         <div style={italicStyle}>
-          See how the city reassembles — same buildings, new order, clean grid. The components are the same. The system composes them.
+          See how the city reassembles — same blocks, new arrangement, clean grid. The pieces are the same. The system composes them.
         </div>
       </div>
     </div>
@@ -684,15 +682,15 @@ function Chapter6({ opacity }) {
       }}
     >
       <div style={{ ...glassCardStyle, maxWidth: '90vw', padding: '32px 40px' }}>
-        <div style={tagStyle}>06 — From Sandbox to Battlefield</div>
+        <div style={tagStyle}>06 — From District to Metropolis</div>
         <div style={headingStyle}>
-          From sandbox to <span style={highlightPink}>battlefield</span>.
+          From one district to the <span style={highlightPink}>whole city</span>.
         </div>
         <div style={{ ...bodyStyle, fontSize: '16px' }}>
-          We proved the system in Image Vertical — our sandbox, free from SERP's strict consistency rules. When Hero, Category, and Swimlane proved themselves, the question arose naturally: why doesn't SERP have this?
+          We proved the blocks worked in Image Vertical — our test district, free from the main city's strict zoning laws. When Landmark, Crossroads, and Avenue proved themselves, the question arose: why doesn't the main city have these?
         </div>
         <div style={{ ...bodyStyle, fontSize: '16px' }}>
-          SERP is a different beast. The biggest constraint: ACF consistency — no radical layout changes allowed. So we adapted surgically. Hero translated cleanly. Swimlane hit a wall — SERP won't allow two carousels — so we kept TopWide as the main section and added a single Carousel as supplement. Category Selector is the frontier we're pushing now: lightweight Chips + Image that SERP's constraints can accommodate.
+          But SERP is a different district with different rules. The biggest constraint: no radical rezoning allowed. So we adapted surgically. Hero transplanted cleanly. Swimlane hit a wall — the main district won't allow two parallel avenues — so we kept TopWide as the main street and added a single Carousel lane. Category Selector is the frontier: lightweight Chips + Image that the zoning code can accommodate.
         </div>
 
         <div
@@ -747,7 +745,7 @@ function Chapter6({ opacity }) {
         </div>
 
         <div style={italicStyle}>
-          Components designed for one surface are now adapting into a system shared across three: Image Vertical, SERP, and GenIE. Same DNA, different mutations for different environments.
+          Blocks designed for one district are now adapting into a system shared across three: Image Vertical, SERP, and GenIE. Same DNA, different neighborhoods.
         </div>
       </div>
     </div>
@@ -880,7 +878,7 @@ function Chapter7({ opacity }) {
             And Beyond.
           </div>
           <div style={{ ...bodyStyle, fontSize: '16px' }}>
-            This isn't just about image search. It's about what happens to design when AI enters the loop.
+            This isn't just about one city. It's about what happens to architecture when AI enters the loop.
           </div>
 
           <div
@@ -892,9 +890,9 @@ function Chapter7({ opacity }) {
             }}
           >
             {[
-              { era: 'Old World', desc: 'Designers control output. You draw, annotate, deliver.', color: 'var(--pink)' },
-              { era: 'New World', desc: 'Designers define the possibility space. Build components, set rules, trust AI to combine at scale.', color: 'var(--purple)' },
-              { era: 'Future', desc: 'Define style, tone, visual principles. AI assembles UI from a vast style library. A2UI.', color: 'var(--yellow)' },
+              { era: 'Old World', desc: 'Architects draw every street. One blueprint, one city.', color: 'var(--pink)' },
+              { era: 'New World', desc: 'Architects forge building blocks. AI assembles a unique city for every visitor.', color: 'var(--purple)' },
+              { era: 'Future', desc: 'Define the city\'s soul — style, rhythm, character. AI generates the skyline. A2UI.', color: 'var(--yellow)' },
             ].map((item) => (
               <div
                 key={item.era}
@@ -929,7 +927,7 @@ function Chapter7({ opacity }) {
               Copilot Mosaic
             </div>
             <div style={{ fontFamily: 'var(--sans)', fontSize: '13px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
-              A frontend platform where designers and engineers continuously build and accumulate templates — a rich style library for AI to compose infinite interfaces. This is <span style={{ color: '#60c0ff' }}>A2UI</span> — from Ambition to User Interface.
+              The city that builds itself. A platform where architects and engineers continuously forge blocks — forming a library rich enough for AI to compose infinite skylines. This is <span style={{ color: '#60c0ff' }}>A2UI</span> — from Ambition to User Interface.
             </div>
           </div>
 
@@ -980,7 +978,6 @@ function Chapter7({ opacity }) {
 
 /* ──────────────────────────────────────────────
    Ch8 — FINALE
-   From markdown ending quote
    ────────────────────────────────────────────── */
 function Chapter8({ opacity }) {
   return (
@@ -1013,9 +1010,9 @@ function Chapter8({ opacity }) {
             marginBottom: '28px',
           }}
         >
-          You're no longer a painter
+          You're no longer drawing
           <br />
-          painting frame by frame.
+          every street by hand.
         </div>
         <div
           style={{
@@ -1043,7 +1040,7 @@ function Chapter8({ opacity }) {
             margin: '0 auto 32px',
           }}
         >
-          This is AI transformation. Not AI replacing designers — but designers learning to design for AI.
+          This is AI transformation. Not AI replacing architects — but architects learning to design for AI.
         </div>
         <div
           style={{

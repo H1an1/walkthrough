@@ -828,28 +828,33 @@ export default function CityScene({ scrollProgress = 0 }) {
 
   return (
     <>
-      <color attach="background" args={['#0a0a12']} />
-      <fog attach="fog" args={['#0a0a12', 0.1, 150]} />
+      <color attach="background" args={['#08080c']} />
+      <fog attach="fog" args={['#08080c', 0.1, 150]} />
 
-      {/* Lighting — realistic night city */}
-      <ambientLight color={0x1a1a2a} intensity={0.8} />
-      {/* Moonlight — cool blue-white */}
-      <directionalLight color={0xc0c8e0} intensity={0.6} position={[15, 40, 20]} castShadow shadow-mapSize={[1024, 1024]} />
-      {/* Warm city glow bounce from below */}
-      <directionalLight color={0xffa060} intensity={0.15} position={[-5, -5, 0]} />
-      {/* Cool fill */}
-      <directionalLight color={0x6080a0} intensity={0.25} position={[-15, 20, -10]} />
-      <hemisphereLight skyColor={0x1a2040} groundColor={0x2a1a10} intensity={0.5} />
+      {/* Lighting — neutral night, let building colors show through */}
+      <ambientLight color={0xffffff} intensity={0.35} />
+      {/* Key light — near-white moonlight, slightly warm */}
+      <directionalLight color={0xf0f0f0} intensity={0.7} position={[15, 40, 20]} castShadow shadow-mapSize={[1024, 1024]} />
+      {/* Warm fill from below — simulates city light bounce */}
+      <directionalLight color={0xffc080} intensity={0.2} position={[-5, -3, 5]} />
+      {/* Cool fill from opposite side for depth */}
+      <directionalLight color={0xd0d8e0} intensity={0.2} position={[-15, 20, -10]} />
+      {/* Hemisphere: warm ground (city glow), cool sky */}
+      <hemisphereLight skyColor={0x202030} groundColor={0x3a2a18} intensity={0.4} />
 
-      {/* Ambient point lights — warm street glow */}
+      {/* Warm area lights — like city ambient glow */}
       <pointLight
         ref={(el) => { if (el) pointLightsRef.current[0] = el; }}
-        color={0xffd090} intensity={0.6} distance={55} position={[15, 20, 10]}
+        color={0xffd090} intensity={0.7} distance={60} position={[15, 15, 10]}
       />
       <pointLight
         ref={(el) => { if (el) pointLightsRef.current[1] = el; }}
-        color={0x90b0d0} intensity={0.4} distance={45} position={[-15, 15, -10]}
+        color={0xffe0a0} intensity={0.5} distance={50} position={[-15, 12, -10]}
       />
+      {/* Extra warm spots at street level */}
+      <pointLight color={0xffc870} intensity={0.4} distance={30} position={[0, 5, 0]} />
+      <pointLight color={0xffd090} intensity={0.3} distance={25} position={[-20, 5, 15]} />
+      <pointLight color={0xffe0a0} intensity={0.3} distance={25} position={[20, 5, -15]} />
 
       {/* Ground layers */}
       <mesh geometry={groundMeshes.geom1} material={groundMaterial} />

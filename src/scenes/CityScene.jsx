@@ -361,27 +361,45 @@ export default function CityScene({ scrollProgress = 0 }) {
     group.position.copy(data.origPos);
     group.userData = data;
 
-    const addWindow = (parent, x, y, z, seed) => {
+    // Creates a full facade of windows on one face of a building
+    const addWindowGrid = (parent, faceWidth, faceHeight, faceY, faceZ, faceSide, seed, cols, rows) => {
       const rng = mulberry32(seed);
-      const r = rng();
-      let color;
-      if (r < 0.4) color = 0xffe8a0;        // warm interior light (most common at night)
-      else if (r < 0.6) color = 0xffd070;    // golden glow
-      else if (r < 0.75) color = 0xa0d0ff;   // cool fluorescent/screen light
-      else if (r < 0.85) color = 0x70b0ff;   // blue-ish office light
-      else color = 0x1a1a22;                  // dark / unlit window
+      const winW = (faceWidth * 0.8) / cols;
+      const winH = (faceHeight * 0.7) / rows;
+      const startX = -(cols - 1) * winW * 0.55;
+      const startY = faceY - faceHeight * 0.35;
 
-      const w = new THREE.Mesh(
-        new THREE.BoxGeometry(0.28, 0.55, 0.05),
-        new THREE.MeshBasicMaterial({ color })
-      );
-      w.position.set(x, y, z);
-      parent.add(w);
+      for (let c = 0; c < cols; c++) {
+        for (let r = 0; r < rows; r++) {
+          const rv = rng();
+          let color;
+          if (rv < 0.35) color = 0xffe8a0;     // warm interior
+          else if (rv < 0.55) color = 0xffd070;  // golden
+          else if (rv < 0.7) color = 0xa0d0ff;   // cool fluorescent
+          else if (rv < 0.8) color = 0x70b0ff;   // blue office
+          else color = 0x181820;                  // dark / unlit
+
+          const w = new THREE.Mesh(
+            new THREE.BoxGeometry(faceSide === 'x' ? 0.05 : winW * 0.85, winH * 0.82, faceSide === 'x' ? winW * 0.85 : 0.05),
+            new THREE.MeshBasicMaterial({ color })
+          );
+          if (faceSide === 'z+') {
+            w.position.set(startX + c * winW * 1.1, startY + r * winH * 1.15, faceZ);
+          } else if (faceSide === 'z-') {
+            w.position.set(startX + c * winW * 1.1, startY + r * winH * 1.15, -faceZ);
+          } else if (faceSide === 'x+') {
+            w.position.set(faceZ, startY + r * winH * 1.15, startX + c * winW * 1.1);
+          } else {
+            w.position.set(-faceZ, startY + r * winH * 1.15, startX + c * winW * 1.1);
+          }
+          parent.add(w);
+        }
+      }
     };
 
     const addLedge = (parent, width, depth, y, color) => {
       const ledge = new THREE.Mesh(
-        new THREE.BoxGeometry(width + 0.4, 0.2, depth + 0.4),
+        new THREE.BoxGeometry(width + 0.4, 0.25, depth + 0.4),
         buildingMaterial.clone()
       );
       ledge.material.color.setHex(color);
@@ -389,50 +407,62 @@ export default function CityScene({ scrollProgress = 0 }) {
       parent.add(ledge);
     };
 
+    // Ground floor storefront — every building gets a lit ground level
+    const addGroundFloor = (parent, width, depth, color) => {
+      // Front storefront
+      const sf = new THREE.Mesh(
+        new THREE.BoxGeometry(width * 0.9, 1.8, 0.06),
+        new THREE.MeshBasicMaterial({ color: 0xffe8a0 })
+      );
+      sf.position.set(0, 1.0, depth / 2 + 0.03);
+      parent.add(sf);
+      // Back side lit
+      const sb = new THREE.Mesh(
+        new THREE.BoxGeometry(width * 0.7, 1.4, 0.06),
+        new THREE.MeshBasicMaterial({ color: 0xffd070 })
+      );
+      sb.position.set(0, 0.9, -(depth / 2 + 0.03));
+      parent.add(sb);
+    };
+
     if (data.type === 'skyscraper') {
       const { baseScale, color } = data;
       const h1 = 14 * baseScale, h2 = 9 * baseScale, h3 = 5 * baseScale;
-      const w = 4 * baseScale, d = 3 * baseScale;
+      const w = 4.5 * baseScale, d = 3.5 * baseScale;
+      const totalH = h1 + h2 + h3;
 
-      // Base
+      // Base section
       const base = new THREE.Mesh(new THREE.BoxGeometry(w, h1, d), buildingMaterial.clone());
       base.material.color.setHex(color);
       base.castShadow = true;
       base.position.y = h1 / 2;
       group.add(base);
 
-      // Ledge at base top
+      // Ground floor storefront
+      addGroundFloor(group, w, d, color);
+
+      // Ledge at base/shaft transition
       addLedge(group, w, d, h1, color);
 
-      // Windows on all 4 sides
-      const sides = [
-        { dir: 'z+', zOff: d / 2 + 0.03 },
-        { dir: 'z-', zOff: -(d / 2 + 0.03) },
-      ];
-      sides.forEach((side) => {
-        for (let col = -1; col <= 1; col++) {
-          for (let row = 0; row < 6; row++) {
-            addWindow(group, col * 1.1, 1.5 + row * 1.8, side.zOff, data.seed + col * 100 + row * 1000 + (side.dir === 'z+' ? 0 : 5000));
-          }
-        }
-      });
+      // Windows on ALL 4 faces of the base
+      addWindowGrid(group, w, h1 - 2.5, h1 / 2 + 1.5, d / 2 + 0.03, 'z+', data.seed, 4, 6);
+      addWindowGrid(group, w, h1 - 2.5, h1 / 2 + 1.5, d / 2 + 0.03, 'z-', data.seed + 1000, 4, 6);
+      addWindowGrid(group, d, h1 - 2.5, h1 / 2 + 1.5, w / 2 + 0.03, 'x+', data.seed + 2000, 3, 6);
+      addWindowGrid(group, d, h1 - 2.5, h1 / 2 + 1.5, w / 2 + 0.03, 'x-', data.seed + 3000, 3, 6);
 
-      // Shaft
-      const shaft = new THREE.Mesh(new THREE.BoxGeometry(w * 0.78, h2, d * 0.8), buildingMaterial.clone());
+      // Middle shaft (setback)
+      const sw = w * 0.78, sd = d * 0.82;
+      const shaft = new THREE.Mesh(new THREE.BoxGeometry(sw, h2, sd), buildingMaterial.clone());
       shaft.material.color.setHex(color);
       shaft.castShadow = true;
       shaft.position.y = h1 + h2 / 2 + 0.3;
       group.add(shaft);
 
       // Shaft windows
-      for (let col = -1; col <= 1; col++) {
-        for (let row = 0; row < 4; row++) {
-          addWindow(group, col * 0.9, h1 + 1.5 + row * 1.8, d * 0.4 + 0.03, data.seed + col * 200 + row * 2000);
-        }
-      }
+      addWindowGrid(group, sw, h2 - 1, h1 + h2 / 2 + 0.5, sd / 2 + 0.03, 'z+', data.seed + 4000, 3, 4);
+      addWindowGrid(group, sw, h2 - 1, h1 + h2 / 2 + 0.5, sd / 2 + 0.03, 'z-', data.seed + 5000, 3, 4);
 
-      // Ledge at shaft top
-      addLedge(group, w * 0.78, d * 0.8, h1 + h2 + 0.3, color);
+      addLedge(group, sw, sd, h1 + h2 + 0.3, color);
 
       // Crown
       const crown = new THREE.Mesh(new THREE.BoxGeometry(w * 0.5, h3, d * 0.5), buildingMaterial.clone());
@@ -441,33 +471,36 @@ export default function CityScene({ scrollProgress = 0 }) {
       crown.position.y = h1 + h2 + h3 / 2 + 0.8;
       group.add(crown);
 
-      // Antenna
+      // Crown windows
+      addWindowGrid(group, w * 0.5, h3 - 1, h1 + h2 + h3 / 2 + 1, d * 0.25 + 0.03, 'z+', data.seed + 6000, 2, 2);
+
+      // Antenna + blinking light
       const rng = mulberry32(data.seed + 1);
-      if (rng() > 0.4) {
+      if (rng() > 0.35) {
         const antenna = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.12, 0.12, 3.5, 6),
-          new THREE.MeshBasicMaterial({ color: 0x444444 })
+          new THREE.CylinderGeometry(0.1, 0.1, 3.5, 6),
+          new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.5, roughness: 0.4 })
         );
-        antenna.position.y = h1 + h2 + h3 + 2.5;
+        antenna.position.y = totalH + 2.5;
         group.add(antenna);
 
         const light = new THREE.Mesh(
-          new THREE.SphereGeometry(0.25, 6, 6),
+          new THREE.SphereGeometry(0.2, 6, 6),
           new THREE.MeshBasicMaterial({ color: 0xff0000 })
         );
-        light.position.y = h1 + h2 + h3 + 4.2;
+        light.position.y = totalH + 4.2;
         light.userData.isAntenna = true;
         group.add(light);
       }
 
-      // Rooftop AC units
-      if (rng() > 0.3) {
-        for (let i = 0; i < 2; i++) {
+      // Rooftop equipment
+      if (rng() > 0.25) {
+        for (let i = 0; i < 3; i++) {
           const ac = new THREE.Mesh(
-            new THREE.BoxGeometry(0.6, 0.4, 0.6),
-            new THREE.MeshPhongMaterial({ color: 0x555555 })
+            new THREE.BoxGeometry(0.5 + rng() * 0.3, 0.35, 0.5 + rng() * 0.3),
+            new THREE.MeshStandardMaterial({ color: 0x666666, roughness: 0.8 })
           );
-          ac.position.set((i - 0.5) * 1.2, h1 + h2 + h3 + 1.2, 0);
+          ac.position.set((i - 1) * 0.9, totalH + 1, (rng() - 0.5) * 1);
           group.add(ac);
         }
       }
@@ -476,49 +509,42 @@ export default function CityScene({ scrollProgress = 0 }) {
       const h = 9 * baseScale;
       const w = 5.5 * baseScale, d = 3.5 * baseScale;
 
-      // Main body
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMaterial.clone());
       body.material.color.setHex(color);
       body.castShadow = true;
       body.position.y = h / 2;
       group.add(body);
 
-      // Glass storefront with warm interior glow
-      const storefront = new THREE.Mesh(
-        new THREE.BoxGeometry(w - 0.2, 2.2, 0.1),
-        new THREE.MeshBasicMaterial({ color: 0xffe8a0 })
-      );
-      storefront.position.set(0, 1.1, d / 2 + 0.05);
-      group.add(storefront);
+      // Ground floor storefront
+      addGroundFloor(group, w, d, color);
 
-      // Awning (dark green or maroon — like real awnings)
-      const rngAwning = mulberry32(data.seed + 77);
-      const awningColor = rngAwning() > 0.5 ? 0x2a4a2a : 0x5a2a2a;
+      // Awning
+      const rngA = mulberry32(data.seed + 77);
+      const awningColor = rngA() > 0.5 ? 0x2a4a2a : 0x5a2a2a;
       const awning = new THREE.Mesh(
-        new THREE.BoxGeometry(w + 0.5, 0.15, 1),
-        new THREE.MeshPhongMaterial({ color: awningColor })
+        new THREE.BoxGeometry(w + 0.3, 0.12, 0.8),
+        new THREE.MeshStandardMaterial({ color: awningColor, roughness: 0.9 })
       );
-      awning.position.set(0, 2.3, d / 2 + 0.5);
+      awning.position.set(0, 2.2, d / 2 + 0.4);
       group.add(awning);
 
-      // Window grid
-      for (let col = -2; col <= 2; col++) {
-        for (let row = 0; row < 3; row++) {
-          addWindow(group, col * 1.1, 3.5 + row * 1.6, d / 2 + 0.03, data.seed + col * 300 + row * 3000);
-        }
-      }
+      // Windows on all 4 sides
+      addWindowGrid(group, w, h - 3, h / 2 + 1.8, d / 2 + 0.03, 'z+', data.seed + 100, 5, 4);
+      addWindowGrid(group, w, h - 3, h / 2 + 1.8, d / 2 + 0.03, 'z-', data.seed + 200, 5, 4);
+      addWindowGrid(group, d, h - 3, h / 2 + 1.8, w / 2 + 0.03, 'x+', data.seed + 300, 3, 4);
+      addWindowGrid(group, d, h - 3, h / 2 + 0.03, w / 2 + 0.03, 'x-', data.seed + 400, 3, 4);
 
-      // Parapet with cornice
+      // Parapet/cornice
       addLedge(group, w, d, h, color);
 
       // Rooftop water tank
       const rng2 = mulberry32(data.seed + 5);
-      if (rng2() > 0.5) {
+      if (rng2() > 0.4) {
         const tank = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.5, 0.5, 1.2, 8),
-          new THREE.MeshPhongMaterial({ color: 0x4a4a5a })
+          new THREE.CylinderGeometry(0.45, 0.45, 1.4, 8),
+          new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.7 })
         );
-        tank.position.set(1, h + 0.8, 0);
+        tank.position.set(1.2, h + 0.9, 0);
         group.add(tank);
       }
     } else if (data.type === 'cylinder') {
@@ -526,30 +552,30 @@ export default function CityScene({ scrollProgress = 0 }) {
       const h = 12 * baseScale;
       const r = 2.2 * baseScale;
 
-      // Main cylinder
-      const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), buildingMaterial.clone());
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.02, h, 20), buildingMaterial.clone());
       body.material.color.setHex(color);
       body.castShadow = true;
       body.position.y = h / 2;
       group.add(body);
 
       // Floor ledge rings (concrete/metal)
-      for (let i = 1; i <= 4; i++) {
+      for (let i = 1; i <= 5; i++) {
         const ring = new THREE.Mesh(
-          new THREE.TorusGeometry(r + 0.2, 0.12, 8, 32),
-          new THREE.MeshStandardMaterial({ color: 0x999999, metalness: 0.3, roughness: 0.5 })
+          new THREE.TorusGeometry(r + 0.15, 0.1, 8, 32),
+          new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.3, roughness: 0.5 })
         );
         ring.rotation.x = Math.PI / 2;
-        ring.position.y = (h / 4.5) * i;
+        ring.position.y = (h / 5.5) * i;
         group.add(ring);
       }
 
-      // Window strips (vertical) — warm/cool mix
-      for (let a = 0; a < 6; a++) {
-        const angle = (a / 6) * Math.PI * 2;
-        const stripColor = a % 2 === 0 ? 0xffe8a0 : 0xa0d0ff;
+      // Window strips (vertical) — denser, covering facade
+      for (let a = 0; a < 10; a++) {
+        const angle = (a / 10) * Math.PI * 2;
+        const rng = mulberry32(data.seed + a * 111);
+        const stripColor = rng() < 0.5 ? 0xffe8a0 : (rng() < 0.7 ? 0xa0d0ff : 0x181820);
         const strip = new THREE.Mesh(
-          new THREE.BoxGeometry(0.3, h * 0.7, 0.05),
+          new THREE.BoxGeometry(r * 0.35, h * 0.75, 0.05),
           new THREE.MeshBasicMaterial({ color: stripColor })
         );
         strip.position.set(
@@ -561,9 +587,17 @@ export default function CityScene({ scrollProgress = 0 }) {
         group.add(strip);
       }
 
-      // Dome
+      // Ground level entrance
+      const entrance = new THREE.Mesh(
+        new THREE.BoxGeometry(1.2, 2, 0.06),
+        new THREE.MeshBasicMaterial({ color: 0xffe8a0 })
+      );
+      entrance.position.set(0, 1, r + 0.03);
+      group.add(entrance);
+
+      // Dome cap
       const rng3 = mulberry32(data.seed + 2);
-      if (rng3() > 0.4) {
+      if (rng3() > 0.35) {
         const dome = new THREE.Mesh(
           new THREE.SphereGeometry(r, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2),
           buildingMaterial.clone()
@@ -577,7 +611,6 @@ export default function CityScene({ scrollProgress = 0 }) {
       const h = 3.5 * baseScale;
       const w = 3.5 * baseScale, d = 3 * baseScale;
 
-      // Body
       const body = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), buildingMaterial.clone());
       body.material.color.setHex(color);
       body.castShadow = true;
@@ -589,29 +622,29 @@ export default function CityScene({ scrollProgress = 0 }) {
         new THREE.ConeGeometry(w * 0.75, 2.5 * baseScale, 4),
         buildingMaterial.clone()
       );
-      roof.material.color.setHex(0x6a4a3a); // warm terracotta/brown roof
+      roof.material.color.setHex(0x6a4a3a);
       roof.rotation.y = Math.PI / 4;
       roof.position.y = h + 1.25 * baseScale;
       group.add(roof);
 
-      // Windows (2 on front)
-      addWindow(group, -0.6, h * 0.6, d / 2 + 0.03, data.seed + 100);
-      addWindow(group, 0.6, h * 0.6, d / 2 + 0.03, data.seed + 200);
+      // Windows — 2 front, 1 side
+      addWindowGrid(group, w, h - 1.5, h / 2 + 0.5, d / 2 + 0.03, 'z+', data.seed + 100, 2, 2);
+      addWindowGrid(group, d, h - 1.5, h / 2 + 0.5, w / 2 + 0.03, 'x+', data.seed + 200, 2, 2);
 
-      // Door (warm lit doorway)
+      // Door
       const door = new THREE.Mesh(
-        new THREE.BoxGeometry(0.6, 1.2, 0.05),
+        new THREE.BoxGeometry(0.7, 1.4, 0.06),
         new THREE.MeshBasicMaterial({ color: 0xffe0a0 })
       );
-      door.position.set(0, 0.6, d / 2 + 0.03);
+      door.position.set(0, 0.7, d / 2 + 0.03);
       group.add(door);
 
-      // Chimney (red brick)
+      // Chimney
       const rng4 = mulberry32(data.seed + 3);
-      if (rng4() > 0.5) {
+      if (rng4() > 0.4) {
         const chimney = new THREE.Mesh(
-          new THREE.BoxGeometry(0.4, 1.5, 0.4),
-          new THREE.MeshPhongMaterial({ color: 0x8a5a4a })
+          new THREE.BoxGeometry(0.4, 1.8, 0.4),
+          new THREE.MeshStandardMaterial({ color: 0x8a5a4a, roughness: 0.9 })
         );
         chimney.position.set(0.8, h + 1.5 * baseScale, -0.5);
         group.add(chimney);

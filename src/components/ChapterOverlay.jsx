@@ -1,46 +1,46 @@
 import React from 'react';
 
 const glassCardStyle = {
-  background: 'rgba(6, 6, 10, 0.86)',
+  background: 'rgba(6, 6, 10, 0.88)',
   backdropFilter: 'blur(44px)',
-  borderRadius: '24px',
+  borderRadius: '28px',
   border: '1px solid rgba(196, 181, 253, 0.1)',
-  padding: '48px',
-  maxWidth: '600px',
+  padding: '56px 64px',
+  maxWidth: '760px',
   margin: '0 auto',
 };
 
 const tagStyle = {
   fontFamily: 'var(--mono)',
-  fontSize: '11px',
+  fontSize: '13px',
   fontWeight: 600,
   color: 'var(--purple)',
   textTransform: 'uppercase',
-  letterSpacing: '1px',
-  marginBottom: '16px',
+  letterSpacing: '1.5px',
+  marginBottom: '20px',
 };
 
 const headingStyle = {
   fontFamily: 'var(--display)',
-  fontSize: '42px',
+  fontSize: '52px',
   fontWeight: 700,
-  lineHeight: 1.2,
+  lineHeight: 1.15,
   color: '#ffffff',
-  marginBottom: '16px',
+  marginBottom: '20px',
 };
 
 const bodyStyle = {
   fontFamily: 'var(--sans)',
-  fontSize: '15px',
-  lineHeight: 1.6,
-  color: 'rgba(255, 255, 255, 0.7)',
-  marginBottom: '16px',
+  fontSize: '18px',
+  lineHeight: 1.7,
+  color: 'rgba(255, 255, 255, 0.75)',
+  marginBottom: '20px',
 };
 
 const italicStyle = {
   fontStyle: 'italic',
-  color: 'rgba(255, 255, 255, 0.5)',
-  fontSize: '14px',
+  color: 'rgba(255, 255, 255, 0.55)',
+  fontSize: '17px',
 };
 
 const highlightPurple = { color: 'var(--purple)' };
@@ -81,15 +81,15 @@ function Chapter0({ opacity }) {
         zIndex: 5000 + Math.round(opacity * 100),
       }}
     >
-      <div style={{ textAlign: 'center', maxWidth: '700px', padding: '40px' }}>
+      <div style={{ textAlign: 'center', maxWidth: '900px', padding: '40px' }}>
         <div
           style={{
             fontFamily: 'var(--display)',
-            fontSize: '64px',
+            fontSize: '80px',
             fontWeight: 700,
-            lineHeight: 1.1,
+            lineHeight: 1.05,
             color: '#ffffff',
-            marginBottom: '24px',
+            marginBottom: '28px',
           }}
         >
           From Pages to{' '}
@@ -98,7 +98,7 @@ function Chapter0({ opacity }) {
         <div
           style={{
             fontFamily: 'var(--sans)',
-            fontSize: '18px',
+            fontSize: '22px',
             lineHeight: 1.6,
             color: 'rgba(255, 255, 255, 0.6)',
           }}
@@ -188,14 +188,14 @@ function Chapter2({ opacity }) {
             <div
               style={{
                 fontFamily: 'var(--mono)',
-                fontSize: '12px',
+                fontSize: '14px',
                 color: 'var(--pink)',
                 marginBottom: '8px',
               }}
             >
               Sunset Wallpaper
             </div>
-            <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)' }}>
+            <div style={{ fontSize: '15px', color: 'rgba(255, 255, 255, 0.6)' }}>
               Needs impact
             </div>
           </div>
@@ -217,7 +217,7 @@ function Chapter2({ opacity }) {
             >
               iPhone 16 Colors
             </div>
-            <div style={{ fontSize: '13px', color: 'rgba(255, 255, 255, 0.6)' }}>
+            <div style={{ fontSize: '15px', color: 'rgba(255, 255, 255, 0.6)' }}>
               Needs structure
             </div>
           </div>
@@ -249,7 +249,7 @@ function Chapter3({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle, maxWidth: '700px' }}>
+      <div style={{ ...glassCardStyle, maxWidth: '860px' }}>
         <div style={tagStyle}>03 — The Shift</div>
         <div style={headingStyle}>
           Stop designing <span style={highlightPink}>pages</span>. Start{' '}
@@ -335,7 +335,7 @@ function Chapter4({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle, maxWidth: '800px' }}>
+      <div style={{ ...glassCardStyle, maxWidth: '920px' }}>
         <div style={tagStyle}>04 — The Ammunition</div>
         <div style={headingStyle}>
           Four components. Infinite combinations.
@@ -422,7 +422,7 @@ function Chapter5({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle, maxWidth: '700px' }}>
+      <div style={{ ...glassCardStyle, maxWidth: '860px' }}>
         <div style={tagStyle}>05 — The New World</div>
         <div style={headingStyle}>
           Designers define the <span style={highlightPurple}>possibility space</span>.
@@ -522,7 +522,7 @@ function Chapter6({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle, maxWidth: '700px' }}>
+      <div style={{ ...glassCardStyle, maxWidth: '860px' }}>
         <div style={tagStyle}>06 — The Future</div>
         <div style={{ ...headingStyle, color: 'var(--yellow)' }}>
           Copilot Mosaic.
@@ -600,15 +600,15 @@ function Chapter7({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ textAlign: 'center', maxWidth: '700px' }}>
+      <div style={{ textAlign: 'center', maxWidth: '900px' }}>
         <div
           style={{
             fontFamily: 'var(--display)',
-            fontSize: '52px',
+            fontSize: '68px',
             fontWeight: 700,
             lineHeight: 1.1,
             color: '#ffffff',
-            marginBottom: '32px',
+            marginBottom: '36px',
           }}
         >
           We didn't redesign a page.
@@ -618,9 +618,9 @@ function Chapter7({ opacity }) {
         <div
           style={{
             fontFamily: 'var(--mono)',
-            fontSize: '12px',
+            fontSize: '14px',
             color: 'rgba(255, 255, 255, 0.3)',
-            letterSpacing: '1px',
+            letterSpacing: '1.5px',
             textTransform: 'uppercase',
           }}
         >

@@ -877,7 +877,7 @@ function Chapter7({ opacity }) {
         >
           <div style={tagStyle}>07 — And Beyond</div>
           <div style={{ ...headingStyle, fontSize: '44px', color: 'var(--yellow)' }}>
-            Copilot Mosaic.
+            And Beyond.
           </div>
           <div style={{ ...bodyStyle, fontSize: '16px' }}>
             This isn't just about image search. It's about what happens to design when AI enters the loop.

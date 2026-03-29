@@ -281,10 +281,10 @@ function Chapter3({ opacity }) {
           }}
         >
           {[
-            { name: 'HERO', image: '/images/hero.png' },
-            { name: 'CATEGORY', image: '/images/category.png' },
-            { name: 'SWIMLANE', image: '/images/swimlane.png' },
-            { name: 'GRID', image: '/images/grid.png' },
+            { name: 'HERO', image: import.meta.env.BASE_URL + 'images/hero.png' },
+            { name: 'CATEGORY', image: import.meta.env.BASE_URL + 'images/category.png' },
+            { name: 'SWIMLANE', image: import.meta.env.BASE_URL + 'images/swimlane.png' },
+            { name: 'GRID', image: import.meta.env.BASE_URL + 'images/grid.png' },
           ].map((comp) => (
             <div
               key={comp.name}
@@ -292,7 +292,7 @@ function Chapter3({ opacity }) {
                 position: 'relative',
                 borderRadius: '12px',
                 overflow: 'hidden',
-                aspectRatio: '1',
+                aspectRatio: '16 / 10',
                 background: 'rgba(0, 0, 0, 0.4)',
               }}
             >

@@ -262,7 +262,7 @@ function Chapter3({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle, maxWidth: '860px', maxHeight: '88vh', overflowY: 'auto', padding: '40px 48px' }}>
+      <div style={{ ...glassCardStyle, maxWidth: '1100px', maxHeight: '88vh', overflowY: 'auto', padding: '40px 48px' }}>
         <div style={tagStyle}>03 — The Shift</div>
         <div style={headingStyle}>
           Stop designing <span style={highlightPink}>pages</span>. Start{' '}

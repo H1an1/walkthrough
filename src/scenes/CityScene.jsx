@@ -361,37 +361,40 @@ export default function CityScene({ scrollProgress = 0 }) {
     group.position.copy(data.origPos);
     group.userData = data;
 
-    // Creates a full facade of windows on one face of a building
+    // Window grid — well-spaced, normal-sized windows
     const addWindowGrid = (parent, faceWidth, faceHeight, faceY, faceZ, faceSide, seed, cols, rows) => {
       const rng = mulberry32(seed);
-      const winW = (faceWidth * 0.8) / cols;
-      const winH = (faceHeight * 0.7) / rows;
-      const startX = -(cols - 1) * winW * 0.55;
-      const startY = faceY - faceHeight * 0.35;
+      // Fixed window size, generous spacing
+      const winW = 0.55;
+      const winH = 0.75;
+      const gapX = (faceWidth * 0.75) / Math.max(cols - 1, 1);
+      const gapY = (faceHeight * 0.65) / Math.max(rows - 1, 1);
+      const startX = -(cols - 1) * gapX / 2;
+      const startY = faceY - (rows - 1) * gapY / 2;
 
       for (let c = 0; c < cols; c++) {
         for (let r = 0; r < rows; r++) {
           const rv = rng();
           let color;
-          if (rv < 0.35) color = 0xffe8a0;     // warm interior
-          else if (rv < 0.55) color = 0xffd070;  // golden
-          else if (rv < 0.7) color = 0xa0d0ff;   // cool fluorescent
-          else if (rv < 0.8) color = 0x70b0ff;   // blue office
-          else color = 0x181820;                  // dark / unlit
+          if (rv < 0.30) color = 0xffe8a0;      // warm interior
+          else if (rv < 0.48) color = 0xffd070;  // golden
+          else if (rv < 0.60) color = 0xa0d0ff;  // cool fluorescent
+          else if (rv < 0.70) color = 0x70b0ff;  // blue office
+          else color = 0x181820;                  // dark / unlit (30%)
+
+          const wx = faceSide === 'x+' || faceSide === 'x-' ? 0.06 : winW;
+          const wz = faceSide === 'x+' || faceSide === 'x-' ? winW : 0.06;
 
           const w = new THREE.Mesh(
-            new THREE.BoxGeometry(faceSide === 'x' ? 0.05 : winW * 0.85, winH * 0.82, faceSide === 'x' ? winW * 0.85 : 0.05),
+            new THREE.BoxGeometry(wx, winH, wz),
             new THREE.MeshBasicMaterial({ color })
           );
-          if (faceSide === 'z+') {
-            w.position.set(startX + c * winW * 1.1, startY + r * winH * 1.15, faceZ);
-          } else if (faceSide === 'z-') {
-            w.position.set(startX + c * winW * 1.1, startY + r * winH * 1.15, -faceZ);
-          } else if (faceSide === 'x+') {
-            w.position.set(faceZ, startY + r * winH * 1.15, startX + c * winW * 1.1);
-          } else {
-            w.position.set(-faceZ, startY + r * winH * 1.15, startX + c * winW * 1.1);
-          }
+          const px = startX + c * gapX;
+          const py = startY + r * gapY;
+          if (faceSide === 'z+') w.position.set(px, py, faceZ);
+          else if (faceSide === 'z-') w.position.set(px, py, -faceZ);
+          else if (faceSide === 'x+') w.position.set(faceZ, py, px);
+          else w.position.set(-faceZ, py, px);
           parent.add(w);
         }
       }
@@ -444,11 +447,11 @@ export default function CityScene({ scrollProgress = 0 }) {
       // Ledge at base/shaft transition
       addLedge(group, w, d, h1, color);
 
-      // Windows on ALL 4 faces of the base
-      addWindowGrid(group, w, h1 - 2.5, h1 / 2 + 1.5, d / 2 + 0.03, 'z+', data.seed, 4, 6);
-      addWindowGrid(group, w, h1 - 2.5, h1 / 2 + 1.5, d / 2 + 0.03, 'z-', data.seed + 1000, 4, 6);
-      addWindowGrid(group, d, h1 - 2.5, h1 / 2 + 1.5, w / 2 + 0.03, 'x+', data.seed + 2000, 3, 6);
-      addWindowGrid(group, d, h1 - 2.5, h1 / 2 + 1.5, w / 2 + 0.03, 'x-', data.seed + 3000, 3, 6);
+      // Windows on front + back (2 visible faces is enough)
+      addWindowGrid(group, w, h1 - 2.5, h1 / 2 + 1.5, d / 2 + 0.03, 'z+', data.seed, 3, 5);
+      addWindowGrid(group, w, h1 - 2.5, h1 / 2 + 1.5, d / 2 + 0.03, 'z-', data.seed + 1000, 3, 5);
+      addWindowGrid(group, d, h1 - 2.5, h1 / 2 + 1.5, w / 2 + 0.03, 'x+', data.seed + 2000, 2, 5);
+      addWindowGrid(group, d, h1 - 2.5, h1 / 2 + 1.5, w / 2 + 0.03, 'x-', data.seed + 3000, 2, 5);
 
       // Middle shaft (setback)
       const sw = w * 0.78, sd = d * 0.82;
@@ -458,9 +461,9 @@ export default function CityScene({ scrollProgress = 0 }) {
       shaft.position.y = h1 + h2 / 2 + 0.3;
       group.add(shaft);
 
-      // Shaft windows
-      addWindowGrid(group, sw, h2 - 1, h1 + h2 / 2 + 0.5, sd / 2 + 0.03, 'z+', data.seed + 4000, 3, 4);
-      addWindowGrid(group, sw, h2 - 1, h1 + h2 / 2 + 0.5, sd / 2 + 0.03, 'z-', data.seed + 5000, 3, 4);
+      // Shaft windows (fewer)
+      addWindowGrid(group, sw, h2 - 1, h1 + h2 / 2 + 0.5, sd / 2 + 0.03, 'z+', data.seed + 4000, 2, 3);
+      addWindowGrid(group, sw, h2 - 1, h1 + h2 / 2 + 0.5, sd / 2 + 0.03, 'z-', data.seed + 5000, 2, 3);
 
       addLedge(group, sw, sd, h1 + h2 + 0.3, color);
 
@@ -471,8 +474,8 @@ export default function CityScene({ scrollProgress = 0 }) {
       crown.position.y = h1 + h2 + h3 / 2 + 0.8;
       group.add(crown);
 
-      // Crown windows
-      addWindowGrid(group, w * 0.5, h3 - 1, h1 + h2 + h3 / 2 + 1, d * 0.25 + 0.03, 'z+', data.seed + 6000, 2, 2);
+      // Crown windows (just a couple)
+      addWindowGrid(group, w * 0.5, h3 - 1, h1 + h2 + h3 / 2 + 1, d * 0.25 + 0.03, 'z+', data.seed + 6000, 2, 1);
 
       // Antenna + blinking light
       const rng = mulberry32(data.seed + 1);
@@ -528,11 +531,11 @@ export default function CityScene({ scrollProgress = 0 }) {
       awning.position.set(0, 2.2, d / 2 + 0.4);
       group.add(awning);
 
-      // Windows on all 4 sides
-      addWindowGrid(group, w, h - 3, h / 2 + 1.8, d / 2 + 0.03, 'z+', data.seed + 100, 5, 4);
-      addWindowGrid(group, w, h - 3, h / 2 + 1.8, d / 2 + 0.03, 'z-', data.seed + 200, 5, 4);
-      addWindowGrid(group, d, h - 3, h / 2 + 1.8, w / 2 + 0.03, 'x+', data.seed + 300, 3, 4);
-      addWindowGrid(group, d, h - 3, h / 2 + 0.03, w / 2 + 0.03, 'x-', data.seed + 400, 3, 4);
+      // Windows — normal density
+      addWindowGrid(group, w, h - 3, h / 2 + 1.8, d / 2 + 0.03, 'z+', data.seed + 100, 3, 3);
+      addWindowGrid(group, w, h - 3, h / 2 + 1.8, d / 2 + 0.03, 'z-', data.seed + 200, 3, 3);
+      addWindowGrid(group, d, h - 3, h / 2 + 1.8, w / 2 + 0.03, 'x+', data.seed + 300, 2, 3);
+      addWindowGrid(group, d, h - 3, h / 2 + 1.8, w / 2 + 0.03, 'x-', data.seed + 400, 2, 3);
 
       // Parapet/cornice
       addLedge(group, w, d, h, color);
@@ -569,13 +572,13 @@ export default function CityScene({ scrollProgress = 0 }) {
         group.add(ring);
       }
 
-      // Window strips (vertical) — denser, covering facade
-      for (let a = 0; a < 10; a++) {
-        const angle = (a / 10) * Math.PI * 2;
+      // Window strips (vertical) — spaced around facade
+      for (let a = 0; a < 6; a++) {
+        const angle = (a / 6) * Math.PI * 2;
         const rng = mulberry32(data.seed + a * 111);
-        const stripColor = rng() < 0.5 ? 0xffe8a0 : (rng() < 0.7 ? 0xa0d0ff : 0x181820);
+        const stripColor = rng() < 0.35 ? 0xffe8a0 : (rng() < 0.55 ? 0xa0d0ff : 0x181820);
         const strip = new THREE.Mesh(
-          new THREE.BoxGeometry(r * 0.35, h * 0.75, 0.05),
+          new THREE.BoxGeometry(r * 0.22, h * 0.55, 0.05),
           new THREE.MeshBasicMaterial({ color: stripColor })
         );
         strip.position.set(

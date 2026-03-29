@@ -1,0 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0e0e1a;--dark:#0e0e1a;--text:#fff;
+  --mute:rgba(255,255,255,.5);--mute2:rgba(255,255,255,.3);--mute-light:rgba(255,255,255,.15);
+  --border:rgba(255,255,255,.08);
+  --purple:#c4b5fd;--pink:#f0c4e2;--yellow:#fde68a;
+  --display:'Outfit',sans-serif;--sans:'Space Grotesk',sans-serif;--mono:'JetBrains Mono',monospace;
+}
+html{overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+#root{width:100%;min-height:100vh}
+
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;opacity:.02;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}

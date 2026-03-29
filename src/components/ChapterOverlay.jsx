@@ -662,8 +662,7 @@ function Chapter5({ opacity }) {
 }
 
 /* ──────────────────────────────────────────────
-   Ch6 — FROM SANDBOX TO BATTLEFIELD + THE BIGGER STORY
-   (从沙盒到战场 + 更大的故事)
+   Ch6 — FROM SANDBOX TO BATTLEFIELD (从沙盒到战场)
    ────────────────────────────────────────────── */
 function Chapter6({ opacity }) {
   return (
@@ -684,20 +683,138 @@ function Chapter6({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle, maxWidth: '920px' }}>
-        <div style={tagStyle}>06 — The Future</div>
-        <div style={{ ...headingStyle, fontSize: '44px' }}>
-          From sandbox to <span style={highlightPink}>battlefield</span>.{' '}
-          <span style={{ color: 'var(--yellow)' }}>And beyond.</span>
+      <div style={{ ...glassCardStyle, maxWidth: '90vw', padding: '32px 40px' }}>
+        <div style={tagStyle}>06 — From Sandbox to Battlefield</div>
+        <div style={headingStyle}>
+          From sandbox to <span style={highlightPink}>battlefield</span>.
         </div>
-        <div style={bodyStyle}>
+        <div style={{ ...bodyStyle, fontSize: '16px' }}>
           We proved the system in Image Vertical — our sandbox, free from SERP's strict consistency rules. When Hero, Category, and Swimlane proved themselves, the question arose naturally: why doesn't SERP have this?
         </div>
         <div style={{ ...bodyStyle, fontSize: '16px' }}>
           SERP is a different beast. The biggest constraint: ACF consistency — no radical layout changes allowed. So we adapted surgically. Hero translated cleanly. Swimlane hit a wall — SERP won't allow two carousels — so we kept TopWide as the main section and added a single Carousel as supplement. Category Selector is the frontier we're pushing now: lightweight Chips + Image that SERP's constraints can accommodate.
         </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: '12px',
+            margin: '20px 0',
+          }}
+        >
+          {[
+            { name: 'HERO → SERP', image: import.meta.env.BASE_URL + 'images/serp-hero.png', color: 'var(--pink)' },
+            { name: 'CAROUSEL → SERP', image: import.meta.env.BASE_URL + 'images/serp-carousel.png', color: 'var(--purple)' },
+            { name: 'CATEGORY → SERP', image: import.meta.env.BASE_URL + 'images/serp-category.png', color: 'var(--yellow)' },
+          ].map((comp) => (
+            <div
+              key={comp.name}
+              style={{
+                position: 'relative',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                background: 'rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              <img
+                src={comp.image}
+                alt={comp.name}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '8px',
+                  left: '8px',
+                  fontFamily: 'var(--mono)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: comp.color,
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                }}
+              >
+                {comp.name}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={italicStyle}>
+          Components designed for one surface are now adapting into a system shared across three: Image Vertical, SERP, and GenIE. Same DNA, different mutations for different environments.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ──────────────────────────────────────────────
+   Ch7 — AND BEYOND (更大的故事)
+   ────────────────────────────────────────────── */
+function Chapter7({ opacity }) {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        opacity,
+        transition: 'opacity 0.1s ease',
+        pointerEvents: opacity > 0 ? 'auto' : 'none',
+        zIndex: 5000 + Math.round(opacity * 100),
+        padding: '40px 20px',
+      }}
+    >
+      <div style={{ ...glassCardStyle, maxWidth: '900px' }}>
+        <div style={tagStyle}>07 — And Beyond</div>
+        <div style={{ ...headingStyle, color: 'var(--yellow)' }}>
+          Copilot Mosaic.
+        </div>
         <div style={bodyStyle}>
-          Components designed for one surface are now <span style={highlightPurple}>adapting into a system shared across three</span>: Image Vertical, SERP, and GenIE. Same DNA, different mutations for different environments.
+          This isn't just about image search. It's about what happens to design when AI enters the loop.
+        </div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr 1fr',
+            gap: '16px',
+            margin: '24px 0',
+          }}
+        >
+          {[
+            { era: 'Old World', desc: 'Designers control output. You draw, you annotate, you deliver.', color: 'var(--pink)' },
+            { era: 'New World', desc: 'Designers define the possibility space. You build components, set rules, then trust AI to combine them at inhuman scale.', color: 'var(--purple)' },
+            { era: 'Future', desc: 'Designers create world elements. Just define style, tone, visual principles. A2UI.', color: 'var(--yellow)' },
+          ].map((item) => (
+            <div
+              key={item.era}
+              style={{
+                padding: '20px',
+                background: 'rgba(255, 255, 255, 0.03)',
+                borderRadius: '14px',
+                border: `1px solid ${item.color}22`,
+                borderTop: `3px solid ${item.color}`,
+              }}
+            >
+              <div style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: item.color, fontWeight: 700, marginBottom: '8px', textTransform: 'uppercase' }}>
+                {item.era}
+              </div>
+              <div style={{ fontFamily: 'var(--sans)', fontSize: '14px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6 }}>
+                {item.desc}
+              </div>
+            </div>
+          ))}
         </div>
 
         <div
@@ -715,6 +832,10 @@ function Chapter6({ opacity }) {
           <div style={{ fontFamily: 'var(--sans)', fontSize: '15px', color: 'rgba(255,255,255,0.6)', lineHeight: 1.7 }}>
             A frontend platform where designers and engineers continuously build and accumulate templates — forming a rich enough style library for AI to choose from and compose, generating infinite possible interfaces. This is <span style={{ color: '#60c0ff' }}>A2UI</span> — from Ambition to User Interface.
           </div>
+        </div>
+
+        <div style={bodyStyle}>
+          Your craft didn't disappear. It <span style={highlightYellow}>condensed</span>. Every component you design is now deployed millions of times, in combinations you never explicitly specified. The leverage is enormous — but only if each building block is precise enough, independent enough, to survive on its own in the field.
         </div>
 
         <div
@@ -763,10 +884,10 @@ function Chapter6({ opacity }) {
 }
 
 /* ──────────────────────────────────────────────
-   Ch7 — FINALE
+   Ch8 — FINALE
    From markdown ending quote
    ────────────────────────────────────────────── */
-function Chapter7({ opacity }) {
+function Chapter8({ opacity }) {
   return (
     <div
       style={{
@@ -847,14 +968,15 @@ function Chapter7({ opacity }) {
 
 export default function ChapterOverlay({ scrollProgress = 0, chapters = [], activeIdx = -1 }) {
   const chapterConfigs = [
-    { start: 0.0, end: 0.12 },
-    { start: 0.12, end: 0.24 },
-    { start: 0.24, end: 0.36 },
-    { start: 0.36, end: 0.48 },
-    { start: 0.48, end: 0.6 },
-    { start: 0.6, end: 0.72 },
-    { start: 0.72, end: 0.84 },
-    { start: 0.84, end: 1.0 },
+    { start: 0.0, end: 0.11 },
+    { start: 0.11, end: 0.22 },
+    { start: 0.22, end: 0.33 },
+    { start: 0.33, end: 0.44 },
+    { start: 0.44, end: 0.55 },
+    { start: 0.55, end: 0.66 },
+    { start: 0.66, end: 0.77 },
+    { start: 0.77, end: 0.88 },
+    { start: 0.88, end: 1.0 },
   ];
 
   const chapterComponents = [
@@ -866,6 +988,7 @@ export default function ChapterOverlay({ scrollProgress = 0, chapters = [], acti
     Chapter5,
     Chapter6,
     Chapter7,
+    Chapter8,
   ];
 
   return (

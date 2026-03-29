@@ -177,12 +177,12 @@ function Chapter2({ opacity }) {
         padding: '40px 20px',
       }}
     >
-      <div style={{ ...glassCardStyle }}>
+      <div style={{ ...glassCardStyle, maxWidth: '90vw', padding: '32px 40px' }}>
         <div style={tagStyle}>02 — The Ceiling</div>
         <div style={headingStyle}>
           There is no <span style={highlightPink}>perfect layout</span>.
         </div>
-        <div style={bodyStyle}>
+        <div style={{ ...bodyStyle, fontSize: '16px' }}>
           We spent months searching for the ideal image search layout. Waterfall, magazine, masonry, grid — 9 rounds of user research, 50+ proposals. Every layout had a fatal flaw. Users wanted contradictory things: waterfall for impact, magazine for scannability.
         </div>
         <div
@@ -240,9 +240,61 @@ function Chapter2({ opacity }) {
             </div>
           </div>
         </div>
-        <div style={bodyStyle}>
+        <div style={{ ...bodyStyle, fontSize: '16px' }}>
           Completely different problems — but we were serving them with the same grid. This isn't a design problem. It's a <span style={highlightYellow}>model problem</span>.
         </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '12px',
+            marginTop: '8px',
+            marginBottom: '16px',
+          }}
+        >
+          {[
+            { label: '"sunset wallpaper"', image: import.meta.env.BASE_URL + 'images/bing-sunset-wallpaper.png', color: 'var(--pink)' },
+            { label: '"iphone 16 colors"', image: import.meta.env.BASE_URL + 'images/bing-iphone16-colors.png', color: 'var(--purple)' },
+          ].map((item) => (
+            <div
+              key={item.label}
+              style={{
+                position: 'relative',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                background: 'rgba(0, 0, 0, 0.4)',
+              }}
+            >
+              <img
+                src={item.image}
+                alt={item.label}
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  display: 'block',
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '8px',
+                  left: '8px',
+                  fontFamily: 'var(--mono)',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  color: item.color,
+                  background: 'rgba(0, 0, 0, 0.7)',
+                  padding: '4px 8px',
+                  borderRadius: '4px',
+                }}
+              >
+                {item.label}
+              </div>
+            </div>
+          ))}
+        </div>
+
         <div style={italicStyle}>
           Layout optimization had hit its ceiling. No amount of pixel-tuning would break through.
         </div>

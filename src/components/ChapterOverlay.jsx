@@ -182,7 +182,7 @@ function Chapter2({ opacity }) {
           There is no <span style={highlightPink}>perfect city plan</span>.
         </div>
         <div style={{ ...bodyStyle, fontSize: '16px' }}>
-          We spent months trying to design the perfect city. Waterfall districts, magazine quarters, masonry grids — 9 rounds of research, 50+ blueprints. Every plan had a fatal flaw. Residents wanted contradictory things: wide boulevards for scenic views, dense blocks for fast navigation.
+          We spent months trying to design the perfect city. Waterfall districts, magazine quarters, masonry grids — countless rounds of UX Labs, 50+ blueprints. Every plan had a fatal flaw. Residents wanted contradictory things: wide boulevards for scenic views, dense blocks for fast navigation.
         </div>
         <div
           style={{
